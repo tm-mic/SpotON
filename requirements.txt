@@ -1,0 +1,10 @@
+folium == 0.12.1
+geopy
+geopandas == 0.12.0
+shapely
+folium
+pyproj
+scipy
+matplotlib
+fiona
+overpy
