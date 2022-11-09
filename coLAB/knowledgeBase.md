@@ -157,6 +157,18 @@ Conditions for list comprehension:
 		self.attribute_two = None
 > **TIP:** After initial class definition all can be used analogues to java.
 
+#### Difference `__new__` & `__init__`
+`__new__` ist used to create a new object from immutable object types (f.e. lists, tuples)
+
+#### Inspect an Object
+use 
+	`print(vars(<object>))`
+
+cast specific attribute to a varaible
+	`x = getattr(<objectname>, <attributename>)`
+
+
+[Link: New and Init the difference](https://medium.com/thedevproject/new-vs-init-in-python-a-most-known-resource-7beb538dc3b)
 ### Parent Vererbung
     `class child(parent):`
 
