@@ -19,14 +19,14 @@ def __handle_path_error_for_config(config_file_path: str) -> str:
         print("The path given does not return a config file. Please provide a different path.")
 
 
-def __find_path_column_list_in_config(config_file_path: str, file_identifier: str) -> tuple:
+def pull_path_column_list_in_config(config_file_path: str, file_identifier: str) -> tuple:
     """Parsing config file returning file path and column headers based on file identifier given.
     Shouldn't be used by itself."""
     config_stream = __handle_path_error_for_config(config_file_path)
     lines = config_stream.splitlines(keepends=False)
     for i, item in enumerate(lines):
         if item.__contains__(file_identifier):
-            return [lines[i + 1], lines[i + 2]]
+            return [lines[i + 1], lines[i + 2], lines[i + 3]]
         else:
             pass
     return 0
@@ -43,13 +43,13 @@ def handle_value_error_for_single_csv_import(config_tuple: tuple, list_of_header
                                    engine='python', encoding_errors='replace', on_bad_lines="skip", nrows=nrows)
     except ValueError:
         return pandas.read_csv(config_tuple[0], sep=None, header=0, engine='python', encoding_errors='replace',
-                               on_bad_lines="skip")
+                               on_bad_lines="skip", nrows=nrows)
 
 
 def import_single_file_as_UTF(config_file_path: str, file_identifier: str, nrows=1):
     """Import a single csv file to pandas dataframe with error handling.
     Shouldn't be used by itself."""
-    config_tuple = (__find_path_column_list_in_config(config_file_path, file_identifier))
+    config_tuple = (pull_path_column_list_in_config(config_file_path, file_identifier))
     # TODO: handle if config columns have been written with ',' and not with ';'
     list_of_headers_from_configfile = config_tuple[1].split(sep=';')
     return handle_value_error_for_single_csv_import(config_tuple, list_of_headers_from_configfile, nrows)
