@@ -1,0 +1,19 @@
+## Readbefore Use:
+--> every section needs 3 lines. [1]: Path to datafile [2]: Columns to be imported to dataframe [3]: Path to attribute value description.
+[1] --> only use absolute paths
+[2] --> can be ignored or default can be written -> then all columns will be imported
+[3] --> only use absolute path
+
+Example:
+
+Familie
+/Users/msccomputinginthehumanities/PycharmProjects/SpotON/files/Familie100m.csv
+Gitter_ID_100m_neu;Merkmal;Auspraegung_Code;Auspraegung_Text;Anzahl;Anzahl_q
+/Users/msccomputinginthehumanities/Uni_Bamberg/02_Studium/03_WS22_23/Klnf-P Projekt/Datensatzbeschreibungen/Datensatzbeschreibung_Gitter100m_Familien.xlsx
+
+Haushalte
+/Users/msccomputinginthehumanities/PycharmProjects/SpotON/files/Haushalte100m.csv
+COLUMNS:
+/Users/msccomputinginthehumanities/Uni_Bamberg/02_Studium/03_WS22_23/Klnf-P Projekt/Datensatzbeschreibungen/Datensatzbeschreibung_Gitter100m_Haushalte.xlsx
+
+
