@@ -12,11 +12,16 @@ if __name__ == '__main__':
     import geopy
     import geopy.distance as distance
     import folium
+    import time
+
+
+
+"""start = time.time()"""
 
 keys = ["Haushalte", "Bevoelkerung"]
 
 """1step"""
-crs_column = IandO.import_all_config_specified_csv(["Haushalte"],r"C:\Users\maxwa\PycharmProjects\pythonProject_geopandas\spoton\fileconfig.txt",nrows=5000)
+crs_column = IandO.import_all_config_specified_csv(["Haushalte"],r"C:\Users\maxwa\PycharmProjects\pythonProject_geopandas\spoton\fileconfig.txt",nrows=100000)
 #print(crs_column)
 
 """2step"""
@@ -41,40 +46,26 @@ coordinate_dataframe_with_polygon_tuples_list = coord_to_polygon.create_polygon_
 
 """7step"""
 shapely_polygon_list = coord_to_polygon.create_shapely_polygons(coordinate_dataframe_with_polygon_tuples)
-print(shapely_polygon_list)
+#print(shapely_polygon_list)
 
 
-#gitterlistevalues = pd.DataFrame(shapely_polygon_list)
-#print(gitterlistevalues)
-#geoframe = gpd.GeoDataFrame(gitterlistevalues, crs='EPSG:3035',geometry=gitterlistevalues)
-#print(geoframe)
-#geodata['Polygons'] = gitterlistevalues.values
-#geoframe.plot('geometry')
-#x,y = t.exterior.xy
-#plt.plot(x,y)
+"""8step"""
+polygon_grid_gdf = coord_to_polygon.create_geodataframe(original_coordinate_tuple,shapely_polygon_list)
+#print(polygon_grid_gdf)
+
+"""9step"""
+base_polygon_gdf = coord_to_polygon.load_base_polygon_to_gdf(r"C:\Users\maxwa\Documents\Universität\Master\Wintersemester 2022\KINF Projekt\Shapefiles\einzelne landkreise\DEBKGID_DEBKGDL20000DZCX.shp")
+#print(base_polygon_gdf)
+
+"""10step"""
+insec_base_grid_gdf = coord_to_polygon.intersection_of_base_polygon_and_grid(base_polygon_gdf,polygon_grid_gdf)
+print(insec_base_grid_gdf)
 
 
-#for row in coordinate_dataframe.iterrows():
-#    plot_zellen(row.POLYGON)
-
-#print(geodata)
-
-#points = coord_to_polygon.create_points_from_tuple_dataframe(coordinate_tuple)
-#xs = [point.x for point in points]
-#ys = [point.y for point in points]
-#plt.scatter(xs, ys)
-#plt.show()
+"""xstep - plotting the gdf"""
+plot_polygon_grid_gdf = coord_to_polygon.plot_geodataframe(insec_base_grid_gdf)
 
 
-
-
-
-
-
-
-
-
-
-
-
-
+"""end = time.time()
+elapsed_time = end - start
+print("Duration:", elapsed_time, "in seconds")"""
