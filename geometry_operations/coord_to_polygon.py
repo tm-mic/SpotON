@@ -4,7 +4,9 @@
 
 
 import pandas as pd
+import geopandas as gpd
 from shapely.geometry import Polygon
+import matplotlib.pyplot as plt
 
 
 keys = ["Haushalte", "Bevoelkerung"]
@@ -83,9 +85,54 @@ def create_shapely_polygons(coordinate_dataframe_with_polygon_tuples):
         shapely_polygon_list.append(x)
     return shapely_polygon_list
 
-## TODO: Create GeoDataFrame with polygons in EPSG:3035.
+def create_geodataframe(original_coordinate_tuple, shapely_polygon_list):
+    """Creates gdf with the first column as key and second column as geometry
+    filled with polygons. Also transfers the geometry in EPSG:3035."""
+    polygon_grid_gdf = gpd.GeoDataFrame()
+    keylist = original_coordinate_tuple.iloc[:,0].tolist()
+    keylistvalues = pd.Series(keylist)
+    polygon_grid_gdf['Key'] = keylistvalues.values
+    shapely_polygon_list_values = pd.Series(shapely_polygon_list)
+    polygon_grid_gdf['geometry'] = shapely_polygon_list_values.values
+    polygon_grid_gdf = gpd.GeoDataFrame(data=keylistvalues, crs='EPSG:3035',
+                                        geometry=shapely_polygon_list_values)
+    return polygon_grid_gdf
 
-## TODO: Plot the GeoDataFrame.
+def load_base_polygon_to_gdf(basepolygon_path: str):
+    """Loads the shapefile of a Landkreis and transforms the EPSG and writes it
+    into a gdf with a single geometry column."""
+    base_polygon_gdf = gpd.read_file(basepolygon_path, enconding='utf-8')
+    base_polygon_gdf = base_polygon_gdf.iloc[:, 12].tolist()
+    base_polygon_gdf = gpd.GeoSeries(base_polygon_gdf)
+    base_polygon_gdf = base_polygon_gdf.set_crs(crs='EPSG:25832')
+    base_polygon_gdf = base_polygon_gdf.to_crs(crs='EPSG:3035')
+    base_polygon_gdf = gpd.GeoDataFrame(data=None, crs='EPSG:3035', geometry=base_polygon_gdf)
+    return base_polygon_gdf
 
-## TODO: Intersect GeoDataFrame with polygon of a Landkreis based
-## TODO: on the centroid of the polygons.
+def intersection_of_base_polygon_and_grid(base_polygon_gdf, polygon_grid_gdf):
+    insec_base_grid_gdf = polygon_grid_gdf.sjoin(base_polygon_gdf)
+    return insec_base_grid_gdf
+
+
+
+
+
+
+# TODO: Intersect GeoDataFrame with polygon of a Landkreis based
+# TODO: on the centroid of the polygons (now intersects if one point
+# TODO: of polygongrid is in basepolygon).
+
+## TODO: Transfer Ladestation position in EPSG 3035 from csv.
+## TODO: Result should be gdf.
+
+## TODO: Create nearest neighbor function for a centroid of a polygon
+## TODO: in grid.
+
+
+def plot_geodataframe(GeoDataFrame):
+    """Plots the gdf and shows it."""
+    GeoDataFrame.plot()
+    plt.show()
+    return GeoDataFrame
+
+
