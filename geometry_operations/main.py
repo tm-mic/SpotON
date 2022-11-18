@@ -12,6 +12,7 @@ if __name__ == '__main__':
     import geopy
     import geopy.distance as distance
     import folium
+    from pyproj import Proj, transform, Transformer
     import time
 
 
@@ -48,22 +49,68 @@ coordinate_dataframe_with_polygon_tuples_list = coord_to_polygon.create_polygon_
 shapely_polygon_list = coord_to_polygon.create_shapely_polygons(coordinate_dataframe_with_polygon_tuples)
 #print(shapely_polygon_list)
 
-
 """8step"""
 polygon_grid_gdf = coord_to_polygon.create_geodataframe(original_coordinate_tuple,shapely_polygon_list)
 #print(polygon_grid_gdf)
 
 """9step"""
-base_polygon_gdf = coord_to_polygon.load_base_polygon_to_gdf(r"C:\Users\maxwa\Documents\Universität\Master\Wintersemester 2022\KINF Projekt\Shapefiles\einzelne landkreise\DEBKGID_DEBKGDL20000DZCX.shp")
+base_polygon_gdf = coord_to_polygon.load_base_polygon_to_gdf(r"C:\Users\maxwa\Documents\Universität\Master\Wintersemester 2022\KINF Projekt\Shapefiles\zulassungskreise\kfz250.utm32s.shape\kfz250\KFZ250.shp")
 #print(base_polygon_gdf)
 
 """10step"""
-insec_base_grid_gdf = coord_to_polygon.intersection_of_base_polygon_and_grid(base_polygon_gdf,polygon_grid_gdf)
-print(insec_base_grid_gdf)
+zulassungskreis = coord_to_polygon.choose_zulassungskreis_from_gdf_by_name(base_polygon_gdf, "Oberallgäu")
+#print(zulassungskreis)
 
+"""11step"""
+bundesland = coord_to_polygon.choose_all_zulassungskreise_by_bundesland(base_polygon_gdf, "09")
+#print(bundesland)
+
+"""12step"""
+insec_base_grid_gdf = coord_to_polygon.intersection_of_base_polygon_and_grid(bundesland,polygon_grid_gdf)
+#print(insec_base_grid_gdf)
 
 """xstep - plotting the gdf"""
-plot_polygon_grid_gdf = coord_to_polygon.plot_geodataframe(insec_base_grid_gdf)
+#plot_polygon_grid_gdf = coord_to_polygon.plot_geodataframe(insec_base_grid_gdf)
+
+
+"""csv import which did not work cuz i dont know"""
+#ladesaeulen_csv = IandO.import_all_config_specified_csv(["Ladestationen"],r"C:\Users\maxwa\PycharmProjects\pythonProject_geopandas\spoton\fileconfig.txt",nrows=1)
+#ladesaeulen_df = pd.DataFrame.from_dict(ladesaeulen_csv, orient='index', columns=['Breitengrad', 'Laengengrad', 'Normalladeeinrichtung', 'Anzahl Ladepunkte'])
+#ladesaeulen_df = pd.DataFrame.from_dict(ladesaeulen_csv)
+#print(ladesaeulen_df)
+
+
+"""Changed original csv because config did not work.
+Creates gdf with all Ladestationen in Germany. Transfers it in EPSG:3035."""
+ladestationen = gpd.GeoDataFrame.from_file(r"C:\Users\maxwa\Documents\Universität\Master\Wintersemester 2022\KINF Projekt\Ladesaeulenregister_CSV_überarbeitung.csv")
+ladestationen['Breitengrad'] = ladestationen['Breitengrad'].str.replace(',','.').astype(float)
+ladestationen['Laengengrad'] = ladestationen['Laengengrad'].str.replace(',','.').astype(float)
+ladestationen['geometry'] = ladestationen.apply(lambda x: Point((float(x.Laengengrad), float(x.Breitengrad))), axis=1)
+del ladestationen['Breitengrad']
+del ladestationen['Laengengrad']
+ladestationen = ladestationen.set_crs(crs='WGS 84', epsg='EPSG:3857')
+ladestationen = ladestationen.to_crs(crs='EPSG:3035')
+#print(ladestationen)
+
+
+"""Intersections of bundesland/zulassungskreis polygons with ladestationen gdf."""
+#ladestationenzulassungskreis = ladestationen.sjoin(zulassungskreis)
+#ladestationenbayern = ladestationen.sjoin(bundesland)
+#print(ladestationenzulassungskreis)
+
+"""Intersection of polygon grid with ladestationen of one Zulassungskreis.
+Does not work. I think needs changes in the order of columns, maybe."""
+#test = polygon_grid_gdf.sjoin(ladestationenzulassungskreis)
+#print(test)
+#coord_to_polygon.plot_geodataframe(test)
+
+"""Intersection of polygon grid with ladestationen gdf.
+Dont know how useful this is, because a ladestation not in a square 
+is not mapped."""
+test2 = ladestationen.sjoin(polygon_grid_gdf)
+print(test2)
+coord_to_polygon.plot_geodataframe(test2)
+
 
 
 """end = time.time()
