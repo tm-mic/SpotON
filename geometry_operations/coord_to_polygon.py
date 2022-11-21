@@ -7,6 +7,7 @@ import pandas as pd
 import geopandas as gpd
 from shapely.geometry import Polygon
 import matplotlib.pyplot as plt
+from shapely.geometry import Point
 
 
 keys = ["Haushalte", "Bevoelkerung"]
@@ -98,6 +99,18 @@ def create_geodataframe(original_coordinate_tuple, shapely_polygon_list):
                                         geometry=shapely_polygon_list_values)
     return polygon_grid_gdf
 
+def centroids_of_polygon_grid(polygon_grid_gdf):
+    """Creates the centriod of polygons int grid gdf."""
+    centroid_points_gdf = polygon_grid_gdf.copy()
+    centroid_points_gdf['geometry'] = centroid_points_gdf['geometry'].centroid
+    return centroid_points_gdf
+
+def buffer_centroid_points(centroid_points_gdf):
+    """Buffers the centroids. Creates circle with 1000meters radius."""
+    buffer_centroid_points_gdf = centroid_points_gdf.copy()
+    buffer_centroid_points_gdf['geometry'] = buffer_centroid_points_gdf['geometry'].buffer(1000)
+    return buffer_centroid_points_gdf
+
 def load_base_polygon_to_gdf(basepolygon_path: str):
     """Loads the shapefile of all Zulassungskreise and transforms the
     EPSG and writes it into a gdf with a Name, ARS and geometry column.
@@ -123,10 +136,36 @@ def intersection_of_base_polygon_and_grid(GeoDataFrame, polygon_grid_gdf):
     insec_base_grid_gdf = polygon_grid_gdf.sjoin(GeoDataFrame)
     return insec_base_grid_gdf
 
+def ladestationen_to_gdf(path: str):
+    """Creates gdf with all Ladestationen in Germany from csv.
+    Geometries in column are points. Transfers it in EPSG:3035."""
+    ladestationen_gdf = gpd.GeoDataFrame.from_file(path)
+    ladestationen_gdf['Breitengrad'] = ladestationen_gdf['Breitengrad'].str.replace(',', '.').astype(float)
+    ladestationen_gdf['Laengengrad'] = ladestationen_gdf['Laengengrad'].str.replace(',', '.').astype(float)
+    ladestationen_gdf['geometry'] = ladestationen_gdf.apply(lambda x: Point((float(x.Laengengrad), float(x.Breitengrad))),
+                                                    axis=1)
+    del ladestationen_gdf['Breitengrad']
+    del ladestationen_gdf['Laengengrad']
+    ladestationen_gdf['Anzahl Ladepunkte'] = ladestationen_gdf['Anzahl Ladepunkte'].astype('int64')
+    ladestationen_gdf = ladestationen_gdf.set_crs(crs='WGS 84', epsg='EPSG:3857')
+    ladestationen_gdf = ladestationen_gdf.to_crs(crs='EPSG:3035')
+    return ladestationen_gdf
 
-# TODO: Intersect GeoDataFrame with polygon of a Landkreis based
-# TODO: on the centroid of the polygons (now intersects if one point
-# TODO: of polygongrid is in basepolygon).
+def insec_ladestationen_gdf_with_zu_or_bu(GeoDataFrame, ladestationen_gdf):
+    """Intersects Ladestation with a Zulassungskreis or a Bundesland."""
+    zubu_ladestationen = ladestationen_gdf.sjoin(GeoDataFrame)
+    del zubu_ladestationen['index_right']
+    zubu_ladestationen = zubu_ladestationen.iloc[:,[3,4,0,1,2]]
+    return zubu_ladestationen
+
+def insec_polygon_grid_with_ladestationen(GeoDataFrame, polygon_grid_gdf):
+    """Intersection of polygon grid with ladestationen of one Zulassungskreis or Bundesland."""
+    polygon_grid_ladestationen = GeoDataFrame.sjoin(polygon_grid_gdf)
+    return polygon_grid_ladestationen
+
+
+
+
 
 # TODO: Create nearest neighbor function for a centroid of a polygon
 # TODO: in grid.
