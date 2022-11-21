@@ -1,12 +1,19 @@
 if __name__ == '__main__':
 
     import pandas as pd
+    #pd.set_option('display.max_rows', None)
+    pd.set_option('display.max_columns', None)
+    pd.set_option('display.width', 1000)
+    pd.set_option('display.colheader_justify', 'center')
+    pd.set_option('display.precision', 2)
     import geopandas as gpd
     import coord_to_polygon
     import IandO
     import matplotlib
     import matplotlib.pyplot as plt
+    import numpy as np
     import shapely
+    from shapely.ops import nearest_points
     from shapely.geometry import Point
     from shapely.geometry import Polygon
     import geopy
@@ -19,10 +26,10 @@ if __name__ == '__main__':
 
 """start = time.time()"""
 
-keys = ["Haushalte", "Bevoelkerung"]
+keys = ["Haushalte", "Bevoelkerung", "Ladestationen"]
 
 """1step"""
-crs_column = IandO.import_all_config_specified_csv(["Haushalte"],r"C:\Users\maxwa\PycharmProjects\pythonProject_geopandas\spoton\fileconfig.txt",nrows=100000)
+crs_column = IandO.import_all_config_specified_csv(["Haushalte"],r"C:\Users\maxwa\PycharmProjects\pythonProject_geopandas\spoton\fileconfig.txt",nrows=5000)
 #print(crs_column)
 
 """2step"""
@@ -53,6 +60,14 @@ shapely_polygon_list = coord_to_polygon.create_shapely_polygons(coordinate_dataf
 polygon_grid_gdf = coord_to_polygon.create_geodataframe(original_coordinate_tuple,shapely_polygon_list)
 #print(polygon_grid_gdf)
 
+"""8.1step"""
+centroid_points_gdf = coord_to_polygon.centroids_of_polygon_grid(polygon_grid_gdf)
+#print(centroid_points_gdf)
+
+"""8.2step"""
+buffer_centroid_points_gdf = coord_to_polygon.buffer_centroid_points(centroid_points_gdf)
+#print(buffer_centroid_points_gdf)
+
 """9step"""
 base_polygon_gdf = coord_to_polygon.load_base_polygon_to_gdf(r"C:\Users\maxwa\Documents\Universität\Master\Wintersemester 2022\KINF Projekt\Shapefiles\zulassungskreise\kfz250.utm32s.shape\kfz250\KFZ250.shp")
 #print(base_polygon_gdf)
@@ -69,47 +84,36 @@ bundesland = coord_to_polygon.choose_all_zulassungskreise_by_bundesland(base_pol
 insec_base_grid_gdf = coord_to_polygon.intersection_of_base_polygon_and_grid(bundesland,polygon_grid_gdf)
 #print(insec_base_grid_gdf)
 
+"""13step"""
+ladestationen_gdf = coord_to_polygon.ladestationen_to_gdf(r"C:\Users\maxwa\Documents\Universität\Master\Wintersemester 2022\KINF Projekt\Ladesaeulenregister_CSV_überarbeitung.csv")
+#print(ladestationen_gdf)
+
+"""14step"""
+zubu_ladestationen = coord_to_polygon.insec_ladestationen_gdf_with_zu_or_bu(bundesland, ladestationen_gdf)
+#print(zubu_ladestationen)
+
+"""15step"""
+polygon_grid_ladestationen_gdf = coord_to_polygon.insec_polygon_grid_with_ladestationen(zubu_ladestationen,polygon_grid_gdf)
+#print(polygon_grid_ladestationen_gdf)
+
+
 """xstep - plotting the gdf"""
 #plot_polygon_grid_gdf = coord_to_polygon.plot_geodataframe(insec_base_grid_gdf)
+
+
+#nearest = centroid_points_gdf.copy()
+#print(nearest)
+
+
+
+
 
 
 """csv import which did not work cuz i dont know"""
 #ladesaeulen_csv = IandO.import_all_config_specified_csv(["Ladestationen"],r"C:\Users\maxwa\PycharmProjects\pythonProject_geopandas\spoton\fileconfig.txt",nrows=1)
 #ladesaeulen_df = pd.DataFrame.from_dict(ladesaeulen_csv, orient='index', columns=['Breitengrad', 'Laengengrad', 'Normalladeeinrichtung', 'Anzahl Ladepunkte'])
 #ladesaeulen_df = pd.DataFrame.from_dict(ladesaeulen_csv)
-#print(ladesaeulen_df)
-
-
-"""Changed original csv because config did not work.
-Creates gdf with all Ladestationen in Germany. Transfers it in EPSG:3035."""
-ladestationen = gpd.GeoDataFrame.from_file(r"C:\Users\maxwa\Documents\Universität\Master\Wintersemester 2022\KINF Projekt\Ladesaeulenregister_CSV_überarbeitung.csv")
-ladestationen['Breitengrad'] = ladestationen['Breitengrad'].str.replace(',','.').astype(float)
-ladestationen['Laengengrad'] = ladestationen['Laengengrad'].str.replace(',','.').astype(float)
-ladestationen['geometry'] = ladestationen.apply(lambda x: Point((float(x.Laengengrad), float(x.Breitengrad))), axis=1)
-del ladestationen['Breitengrad']
-del ladestationen['Laengengrad']
-ladestationen = ladestationen.set_crs(crs='WGS 84', epsg='EPSG:3857')
-ladestationen = ladestationen.to_crs(crs='EPSG:3035')
-#print(ladestationen)
-
-
-"""Intersections of bundesland/zulassungskreis polygons with ladestationen gdf."""
-#ladestationenzulassungskreis = ladestationen.sjoin(zulassungskreis)
-#ladestationenbayern = ladestationen.sjoin(bundesland)
-#print(ladestationenzulassungskreis)
-
-"""Intersection of polygon grid with ladestationen of one Zulassungskreis.
-Does not work. I think needs changes in the order of columns, maybe."""
-#test = polygon_grid_gdf.sjoin(ladestationenzulassungskreis)
-#print(test)
-#coord_to_polygon.plot_geodataframe(test)
-
-"""Intersection of polygon grid with ladestationen gdf.
-Dont know how useful this is, because a ladestation not in a square 
-is not mapped."""
-test2 = ladestationen.sjoin(polygon_grid_gdf)
-print(test2)
-coord_to_polygon.plot_geodataframe(test2)
+#print(ladesaeulen_csv)
 
 
 
