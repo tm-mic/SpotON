@@ -74,3 +74,65 @@ def import_all_config_specified_csv(file_list: str, config_file_path: str, nrows
               f'or is not listed in your filepath.txt.\n')
         pass
     return dataframe_dictionary_of_imported_csv
+
+nested_bundeslaender = {
+    "Bayern": {"name": "Bayern", "crs_100km":
+        ["N26E43", "N26E44",
+         "N27E43", "N27E44", "N27E45",
+         "N28E43", "N28E44", "N28E45", "N28E46",
+         "N29E42", "N29E43", "N29E45",
+         "N30E42", "N30E43", "N30E44"]},
+    "Baden-Württemberg": {"name": "Baden-Württemberg", "crs_100km":
+        ["N27E41", "N27E42", "N27E43",
+         "N28E40", "N28E41", "N28E42", "N28E43",
+         "N29E41", "N29E42", "N29E43"]},
+    "Berlin": {"name": "Berlin", "crs_100km":
+        ["N32E45"]},
+    "Brandenburg": {"name": "Brandenburg", "crs_100km":
+        ["N31E44", "N31E45", "N31E46"
+         "N32E44", "N32E45", "N32E46",
+         "N33E44", "N33E45", "N33E46"]},
+    "Bremen": {"name": "Bremen", "crs_100km":
+        ["N33E42"]},
+    "Hamburg": {"name": "Hamburg", "crs_100km":
+        ["N33E42", "N33E43",
+         "N34E42", "N34E43"]},
+    "Hessen": {"name": "Hessen", "crs_100km":
+        ["N29E41", "N29E42", "N29E43",
+         "N30E41", "N30E42", "N30E43"
+         "N31E42", "N31E43"]},
+    "Mecklenburg-Vorpommern": {"name": "Mecklenburg-Vorpommern", "crs_100km":
+        ["N33E43", "N33E45", "N33E45", "N33E46",
+         "N34E43", "N34E44", "N34E45", "N34E46",
+         "N35E43", "N35E44", "N35E45"]},
+    "Niedersachsen": {"name": "Niedersachsen", "crs_100km":
+        ["N31E42", "N31E43",
+         "N32E40", "N32E41", "N32E42", "N32E43", "N32E44",
+         "N33E40", "N33E41", "N33E42", "N33E43", "N33E44",
+         "N34E40", "N34E41", "N34E42", "N34E43"]},
+    "Nordrhein-Westfalen": {"name": "Nordrhein-Westfalen", "crs_codes":
+        ["N30E40", "N30E41", "N30E42",
+         "N31E40", "N31E41", "N31E42",
+         "N32E40", "N32E41", "N32E42"]},
+    "Rheinland-Pfalz": {"name": "Rheinland-Pfalz", "crs_codes":
+        ["N28E41", "N28E42",
+         "N29E40", "N29E41", "N29E42",
+         "N30E40", "N30E41", "N3042"]},
+    "Saarland": {"name": "Saarland", "crs_codes":
+        ["N28E40", "N28E41",
+         "N29E40", "N29E41"]},
+    "Sachsen": {"name": "Sachsen", "crs_codes":
+        ["N30E44", "N30E45", "N30E46",
+         "N31E44", "N31E45", "N31E46"]},
+    "Sachsen-Anhalt": {"name": "Sachsen-Anhalt", "crs_codes":
+        ["N30E44",
+         "N31E43", "N31E44", "N31E45",
+         "N32E43", "N32E44", "N32E45",
+         "N33E43", "N3344"]},
+    "Schleswig-Holstein": {"name": "Schleswig-Holstein", "crs_codes":
+        ["N33E42", "N33E43", "N33E43",
+         "N34E41", "N34E42", "N34E43",
+         "N35E41", "N35E42", "N35E43"]},
+    "Thüringen": {"name": "Thüringen", "crs_codes":
+        ["N30E43", "N30E44", "N30E45",
+         "N31E43", "N31E44", "N31E45"]}}
