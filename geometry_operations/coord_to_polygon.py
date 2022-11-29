@@ -100,26 +100,37 @@ def create_geodataframe(original_coordinate_tuple, shapely_polygon_list):
     return polygon_grid_gdf
 
 def centroids_of_polygon_grid(polygon_grid_gdf):
-    """Creates the centriod of polygons int grid gdf."""
+    """Creates the centriod of polygons in grid gdf."""
     centroid_points_gdf = polygon_grid_gdf.copy()
     centroid_points_gdf['geometry'] = centroid_points_gdf['geometry'].centroid
     return centroid_points_gdf
 
-def buffer_centroid_points(centroid_points_gdf):
+def buffer_centroid_points(centroid_points_gdf, buffer = 1000):
     """Buffers the centroids. Creates circle with 1000meters radius."""
     buffer_centroid_points_gdf = centroid_points_gdf.copy()
-    buffer_centroid_points_gdf['geometry'] = buffer_centroid_points_gdf['geometry'].buffer(1000)
+    buffer_centroid_points_gdf['geometry'] = buffer_centroid_points_gdf['geometry'].buffer(buffer)
     return buffer_centroid_points_gdf
 
 def load_base_polygon_to_gdf(basepolygon_path: str):
     """Loads the shapefile of all Zulassungskreise and transforms the
     EPSG and writes it into a gdf with a Name, ARS and geometry column.
     Slices ARS. Only first Numbers are needed for the Bundesland."""
-    base_polygon_gdf = gpd.read_file(basepolygon_path, enconding='utf-8')
+    base_polygon_gdf = gpd.read_file(basepolygon_path, encoding='utf-8')
     base_polygon_gdf = base_polygon_gdf[["NAME","ARS","geometry"]]
     base_polygon_gdf['ARS'] = base_polygon_gdf['ARS'].str.slice(0,2)
     base_polygon_gdf = base_polygon_gdf.to_crs(crs='EPSG:3035')
     return base_polygon_gdf
+
+def load_gemeinde_polygon_to_gdf(gemeindeshp: str):
+    """Loads the shapefile of all Gemeinden and transforms the
+    EPSG and writes it into a gdf with a Name, ARS, BEZ and geometry column.
+    Slices ARS. Only first Numbers are needed for the Bundesland."""
+    gemeinde_polygon_gdf = gpd.read_file(gemeindeshp, enconding='utf-8')
+    gemeinde_polygon_gdf = gemeinde_polygon_gdf[["GEN", "ARS", "BEZ", "geometry"]]
+    gemeinde_polygon_gdf['ARS'] = gemeinde_polygon_gdf['ARS'].str.slice(0, 2)
+    gemeinde_polygon_gdf.rename(columns={'GEN':'NAME'}, inplace=True)
+    gemeinde_polygon_gdf = gemeinde_polygon_gdf.to_crs(crs='EPSG:3035')
+    return gemeinde_polygon_gdf
 
 def choose_zulassungskreis_from_gdf_by_name(base_polygon_gdf, Name: str):
     """Chooses a single Zulassungskreis by Name from the base_polygon_gdf."""
@@ -163,12 +174,30 @@ def insec_polygon_grid_with_ladestationen(GeoDataFrame, polygon_grid_gdf):
     polygon_grid_ladestationen = GeoDataFrame.sjoin(polygon_grid_gdf)
     return polygon_grid_ladestationen
 
+def ladestationen_in_range_of_centroid(zubu_ladestationen, buffer_centroid_points_gdf):
+    """Ladestation in range of buffered centroid."""
+    ladestationen_in_range = zubu_ladestationen.sjoin(buffer_centroid_points_gdf)
+    return ladestationen_in_range
 
+def neighbors_of_grid_polygon(centroid_points_gdf, buffer_centroid_points_gdf):
+    """Centroids in range of buffered centroid."""
+    neighbors = centroid_points_gdf.sjoin(buffer_centroid_points_gdf)
+    return neighbors
 
-
-
-# TODO: Create nearest neighbor function for a centroid of a polygon
-# TODO: in grid.
+def ladestationen_in_gemeinde_with_grid_centriod(Name: str, gemeinde_polygon_gdf, ladestationen_gdf,centroid_points_gdf, buffer = 500):
+    """Takes all Ladestationen in one Gemeinde (which can specified by name), buffers them and
+    intersects them with the centroid of the grid polygons in range of the buffer. The result is
+    a gdf in which the information is given, how many Ladestationen are in reach of one grid.
+    Column names are: KEY, geometry, ARS, NAME, BEZ, Normalladeeinrichtung, Anzahl Ladepunkte."""
+    gemeinde = choose_zulassungskreis_from_gdf_by_name(gemeinde_polygon_gdf, Name)
+    gemeinde_ladestationen = ladestationen_gdf.sjoin(gemeinde)
+    gemeinde_ladestationen = buffer_centroid_points(gemeinde_ladestationen,buffer)
+    del gemeinde_ladestationen['index_right']
+    gemeinde_ladestationen = gemeinde_ladestationen.iloc[:,[4,3,5,0,1,2]]
+    gemeinde_ladestationen = centroid_points_gdf.sjoin(gemeinde_ladestationen)
+    del gemeinde_ladestationen['index_right']
+    gemeinde_ladestationen.rename(columns={0:'KEY'}, inplace=True)
+    return gemeinde_ladestationen
 
 
 def plot_geodataframe(GeoDataFrame):
