@@ -1,41 +1,44 @@
-from IandO.IandO import import_all_config_specified_csv
-from subset_operations.get_crs_by_bundesland import get_crs_by_bundesland
+import geopandas
 
-"""Specify in code if Gitter_ID_100m or Gitter_ID_100m_neu is used"""
-"""TODO: Automate said specification"""
-"""Consider hard coding gitter_path & shapefile_path or getting both from fileconfig.txt"""
+"""Function requires dataframe_dictionary_of_imported_csv from IandO.IandO and geogitter_bundeslaender_gdf from subset_operations.get_crs_by_bundesland
+Returns subset of dataframe_dictionary_of_imported_csv of all imported csv by given bundesland"""
 
-def subset_all_files_by_bundesland_and_column(filelist: list,
-                                              config_file_path: str,
-                                              column: str,
-                                              gitter_path: str,
-                                              shapefile_path: str,
-                                              bundesland_ARS: int,
-                                              nrows= 5000):
+def subset_all_files_by_bundesland_and_column(dataframe_dictionary_of_imported_csv: dict,
+                                              geogitter_bundeslaender_gdf: geopandas.GeoDataFrame,
+                                              bundesland: str):
 
-    df_dict = import_all_config_specified_csv(filelist,
-                                              config_file_path,
-                                              nrows)
+    subset_dataframe_dictionary_of_imported_csv = {}
 
-    keylist = list(df_dict.keys())
+    keylist = list(dataframe_dictionary_of_imported_csv.keys())
 
-    crs_100km = get_crs_by_bundesland(gitter_path, shapefile_path)
-    crs_100km["ARS"] = crs_100km["ARS"].astype('int')
-    crs_100km = crs_100km[crs_100km["ARS"] == bundesland_ARS]
-    crs_100km = crs_100km["id"]
+    geogitter_bundeslaender_gdf["ARS"] = geogitter_bundeslaender_gdf["ARS"].astype('int')
+    geogitter_bundesland_gdf = geogitter_bundeslaender_gdf[geogitter_bundeslaender_gdf["NAME"].str.contains(bundesland, case = False)]
+    geogitter_bundesland_gdf = geogitter_bundesland_gdf["id"]
 
     for item in keylist:
+
         matches = []
-        df = df_dict.get(item)
-        crs_series = df[column]
+        df = dataframe_dictionary_of_imported_csv.get(item)
 
-        for crs in crs_series:
-            for crs_key in crs_100km:
-                """An Gitter_ID_100m oder Gitter_ID_100m_neu anpassen"""
-                # if (crs[14:17] + crs[22:25]) == crs_key[5:11]:  # Gitter_ID_100m_neu
-                if (crs[4:7] + crs[10:13]) == crs_key[5:11]:  # Gitter_ID_100m
-                    matches.append(crs)
+        for col in df.columns:
+            if 'Gitter_ID_100m' == col:
+                crs_series = df[col]
+                for crs in crs_series:
+                    for id in geogitter_bundesland_gdf:
+                        if (crs[4:7] + crs[10:13]) == id[5:11]:
+                            matches.append(crs)
 
-        df_bundesland = df.loc[df[column] == matches]
+                df_bundesland = df[df[col].isin(matches)]
+                subset_dataframe_dictionary_of_imported_csv.__setitem__(item, df_bundesland)
 
-        return df_bundesland
+            elif 'Gitter_ID_100m_neu' == col:
+                crs_series = df[col]
+                for crs in crs_series:
+                    for id in geogitter_bundesland_gdf:
+                        if (crs[14:17] + crs[22:25]) == id[5:11]:
+                            matches.append(crs)
+
+                df_bundesland = df[df[col].isin(matches)]
+                subset_dataframe_dictionary_of_imported_csv.__setitem__(item, df_bundesland)
+
+    return subset_dataframe_dictionary_of_imported_csv
