@@ -18,7 +18,8 @@ def get_crs_by_bundesland(gitter_path: str, shapefile_path: str):
     buffer_centroid_points_gdf['geometry'] = gitter_gdf['geometry'].buffer(50000, cap_style=3)
 
     """Imports shapefile of Bundeslaender borders"""
-    bundesland_polygon_gdf = gpd.read_file(shapefile_path)
+    bundesland_polygon_gdf = gpd.read_file(shapefile_path,
+                                           encoding = 'utf-8')
 
     bundesland_polygon_gdf = bundesland_polygon_gdf[["GEN", "ARS", "BEZ", "geometry"]]
     bundesland_polygon_gdf['ARS'] = bundesland_polygon_gdf['ARS'].str.slice(0, 2)
