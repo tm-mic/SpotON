@@ -20,10 +20,10 @@ def group_and_mean(df: pd.DataFrame,
 
 def group_and_sum(df, grouping_list=None, group_col=0, sum_col=1) -> pd.DataFrame:
     """ Groups and sums dataframe based on given list.
-    :param: grouping_list: List of columns to be grouped and summed on.
-    :param: sum_col: Col to sum over.
-    :param: group_col: Col to group by.
-    :param: df_to_normalize:
+    :param grouping_list: List of columns to be grouped and summed on.
+    :param sum_col: Col to sum over.
+    :param group_col: Col to group by.
+    :param df_to_normalize:
     :return: Dataframe with sum over count of attributes.
     """
     if grouping_list is None:
@@ -38,12 +38,12 @@ def calc_ratio_to_sum(dividend_df, divisor_df, quotient_column='Average_ratio', 
     """
     Calculate quotient of two dataframe columns based on inner merge of two dataframes.
     Used for ratio calculation.
-    :param: divisor_col: Divisor column passed as int.
-    :param: dividend_col: Dividend column passed as int.
-    :param: merge_on_col: Specifies the columns to merge on.
-    :param: quotient_column: specifies column header of quotient.
-    :param: dividend_df: Dataframe containing the dividend values.
-    :param: divisor_df: Dataframe containing the divisor values.
+    :param divisor_col: Divisor column passed as int.
+    :param dividend_col: Dividend column passed as int.
+    :param merge_on_col: Specifies the columns to merge on.
+    :param quotient_column: specifies column header of quotient.
+    :param dividend_df: Dataframe containing the dividend values.
+    :param divisor_df: Dataframe containing the divisor values.
     :return: Quotient of two dataframe cols.
     """
     merged = dividend_df.merge(divisor_df, on=merge_on_col, how='inner')
@@ -55,6 +55,7 @@ def count_grouped(df: pd.DataFrame,
                   groupby_list=None) -> pd.DataFrame:
     """
     Group and count elements by list.
+
     :param df:
     :param groupby_list:
     :param rename_list:
@@ -75,6 +76,7 @@ def calc_count_countsum_ratio(df: pd.DataFrame, groupby_list=None, rename_list=N
     """
     Groups and sums over count column. Divides with given count column.
     Sum over grouped elements and create ratio by list.
+
     :param: sum_col: Col to sum over.
     :param: merge_on_cols: Cols to merge on.
     :param: index_reset_list: Reset multiindex of grouped and summed input dataframe.
@@ -99,6 +101,7 @@ def calc_count_countsum_ratio(df: pd.DataFrame, groupby_list=None, rename_list=N
 
 def mean_attr_val(df: pd.DataFrame, mul_col='Anzahl', cols_to_mul=None):
     """Multiply two dataframe columns based on column index.
+
     :param: mul_col: name of result col.
     :param: cols_to_mul: Tuple of df columns to multiply with each other.
     :return: Dataframe with two multiplied columns.

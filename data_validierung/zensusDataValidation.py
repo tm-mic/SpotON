@@ -6,7 +6,7 @@ import pandas as pd
 
 
 def validate_attr_val_combination(testframe: pd.DataFrame, attr_val_dict: dict) -> Tuple[list, float]:
-    """Input dataframe to be tested and attr_val_dict to test against.
+    """Input dataframe to be tested and attr_val_dict to Bedarfe_Main.py against.
     [1] Dataframe can be created through *import_all_config_specified_csv* and config file.
     [2] attr_val_dict can be created through *create_attribute_value_dict*.
     [4] Function will return list of bad values and ratio of valid/raw entries."""

@@ -62,5 +62,5 @@ def create_attribute_value_dict(path: str) -> dict :
             attr_value_dict.__setitem__(attr, val_list)
         return attr_value_dict
     except ValueError:
-        print("The file you are looking for does not exist or is not listed in your path mapping.")
+        print("The file or column you are looking for does not exist or is not listed in your path mapping or adapt helper functions to reflect your file structure.")
         pass

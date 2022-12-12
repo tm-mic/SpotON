@@ -1,8 +1,5 @@
 import pandas as pd
-import general_data_aggregation
-from IandO import IandO, IandOMetaData
-import unique_crs
-
+from data_aggregation.unique_crs import get_unique_crs
 
 def calculate_weight_cell_ratio_for_attr_val(aggregated_data, weight_mapping, default_weight=0, print_attr_for_cell=False,
                                              included_columns=None):
@@ -23,7 +20,8 @@ def calculate_weight_cell_ratio_for_attr_val(aggregated_data, weight_mapping, de
 
     If no weight is specified or a key error is encountered the default weight of 0 is assumed and your results will not be valid.
 
-    example Input with csv import specified:
+
+    Example Input with csv import specified:
 
         meta_data_path = IandO.pull_path_column_list_in_config('/Users/msccomputinginthehumanities/PycharmProjects/SpotON/fileconfig.txt',
                                               'Gebaeude')[2]
@@ -37,13 +35,11 @@ def calculate_weight_cell_ratio_for_attr_val(aggregated_data, weight_mapping, de
             'EIGENTUM': {1: 1, 2: 1, 3: 1, 4: 2, 5: 2, 6: 3, 7: 3, 8: 3},
             'WOHNEIGENTUM': {1: 1, 2: 2, 3: 2, 4: 2, 99: 0},
             'HEIZTYP': {1: 3, 2: 3, 3: 15, 4: 15, 5: 15, 6: 15}
-        }
 
         weight_mapping = {
             'GEBTYPGROESSE': {1:1, 2:1},
             'EIGENTUM':{1:1, 2:1,3:1},
-            'Heiztyp':{3:0, 15:0.9}
-        }
+            'Heiztyp':{3:0, 15:0.9}}
         aggregated_data = general_data_aggregation.data_aggregation(imported_df, meta_data_path, mapping_dict)
 
 
@@ -53,9 +49,9 @@ def calculate_weight_cell_ratio_for_attr_val(aggregated_data, weight_mapping, de
     If total_count of observations and sum of attribute observations is equal this operation does not have an effect."""
 
     if included_columns is None:
-        included_columns = ['Gitter_ID_100m_neu', 'Merkmal', 'Weighted_Ratio']
+        included_columns = ['Gitter_ID_100m_neu', 'Merkmal', 'Auspraegung_Code', 'Weighted_Ratio']
 
-    crs_list = unique_crs.get_unique_crs(imported_df, 1)
+    crs_list = get_unique_crs(aggregated_data, 0)
     result_df = pd.DataFrame(columns=included_columns)
 
     for unique_cell_crs in crs_list:
@@ -82,7 +78,7 @@ def calculate_weight_cell_ratio_for_attr_val(aggregated_data, weight_mapping, de
                     attr_weight = default_weight
 
             except KeyError:
-                default_weight = 0
+                attr_weight = 0
 
             ratio_value = row[5]
             ratio_to_total = row[7]
@@ -97,5 +93,3 @@ def calculate_weight_cell_ratio_for_attr_val(aggregated_data, weight_mapping, de
         result_df = pd.concat([result_df, ratio_df], ignore_index=True, sort=False)[result_df.columns]
 
     return result_df
-
-calculate_weight_cell_ratio_for_attr_val()

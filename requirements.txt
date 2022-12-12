@@ -10,3 +10,4 @@ fiona
 overpy
 openpyxl
 pandas~=1.5.1
+rtree

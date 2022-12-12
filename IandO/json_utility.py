@@ -10,7 +10,7 @@ def read_json(file_path='config.json') -> object:
     """
     Casts json file from file to python object.
     Note: Object_hook is necessary due to json format. Casts digit str to int.
-    :param file_path: Path to json file.
+    :param: file_path: Path to json file.
     :return: Python object. Most likely a dict.
     """
     try:

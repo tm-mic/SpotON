@@ -181,6 +181,100 @@ cast specific attribute to a varaible
 	1) `parent.method()`
 	2) `super().parentmethod()`
 ***
+
+# Testing in Python
+Reference: [Real Python](https://realpython.com/python-testing/)
+
+## Terminology
+Unit Test => checks individual componenents of your application
+Integration Test => checks if the application delivers the output requested
+
+### Unit Test
+Consist of:
+- test case
+- assertion
+- entry point
+
+Example for simple sum() test case:
+	
+	`def test_sum():
+    assert sum([1, 2, 3]) == 6, "Should be 6"
+	if __name__ == "__main__":
+		test_sum()
+		print("Everything passed")`
+
+Standard Library for testing in Python is unittest.
+It is required that:
+- You put your tests into classes as methods
+- You use a series of special assertion methods in the unittest.TestCase class instead of the built-in assert statement
+
+Example for unittest test:
+
+	`import unittest
+	class TestSum(unittest.TestCase):
+    def test_sum(self):
+        self.assertEqual(sum([1, 2, 3]), 6, "Should be 6")
+    def test_sum_tuple(self):
+        self.assertEqual(sum((1, 2, 2)), 6, "Should be 6")
+	if __name__ == '__main__':
+		unittest.main()`
+
+Pytest is another test library, which reduces complexity and allows for use of many plugins.
+
+### Setting up testing environment
+- testfile should be able to import the functions - hence they should be structured above the module file in the project tree 
+- functions, modules and classes can be imported to the test file using __import__()
+
+### Test Structure
+*Before you dive into writing tests, you’ll want to first make a couple of decisions:*
+    - What do you want to test?
+    - Are you writing a unit test or an integration test
+*Then the structure of a test should loosely follow this workflow:*
+    - Create your inputs
+    - Execute the code being tested, capturing the output
+    - Compare the output with an expected result
+*For this application, you’re testing sum(). There are many behaviors in sum() you could check, such as:*
+    - Can it sum a list of whole numbers (integers)?
+    - Can it sum a tuple or set?
+    - Can it sum a list of floats?
+    - What happens when you provide it with a bad value, such as a single integer or a string?
+    - What happens when one of the values is negative?
+
+Example for a simple test in the test.py file:
+
+	`import unittest
+	from my_sum import sum					# import the function to be tested
+	class TestSum(unittest.TestCase):		# create test class to inherit TestCase functionality
+		def test_list_int(self):
+			"""
+			Test that it can sum a list of integers
+			"""
+			data = [1, 2, 3]				# provide data structure to be tested on
+			result = sum(data)				
+			self.assertEqual(result, 6)		# assert result of test case
+	if __name__ == '__main__':
+		unittest.main()`
+
+**Assertion of results comes with different methods. These methods should fit your input data.**
+Method 	Equivalent to
+.assertEqual(a, b) 	a == b
+.assertTrue(x) 	bool(x) is True
+.assertFalse(x) 	bool(x) is False
+.assertIs(a, b) 	a is b
+.assertIsNone(x) 	x is None
+.assertIn(a, b) 	a in b
+.assertIsInstance(a, b) 	isinstance(a, b)
+*.assertIs(), .assertIsNone(), .assertIn(), and .assertIsInstance() all have opposite methods, named .assertIsNot(), and so forth.*
+
+To activate Test Runner insert following code at bottom of test.py 
+	`if __name__ == '__main__':
+    unittest.main()`
+
+or use 
+
+	`python -m unittest discover` #only works if test files follow naming convention of test*.py
+
+
 ***
 ## OSM and OSM API
 *This section provides basics for dealing with OSM data retrieval via the API and basic knowledge on the structure of OSM.*
@@ -437,3 +531,5 @@ Based on different factors such as socioeconomic weights f.e
 	0 as non-relation 
 	1 as relation
 --> links (neigborhoods) must match empiric process -- spatial process must be represented
+
+

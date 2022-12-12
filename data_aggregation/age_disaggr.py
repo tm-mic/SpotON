@@ -5,7 +5,7 @@ from pandas import DataFrame
 import random as rnd
 
 
-def calc_distro_sum(val_sum: int, splitter: int) -> tuple:
+def calc_distro_sum(val_sum: int, splitter: float) -> tuple:
     """
     Calcs two values with val1 + val2 = 1, if given splitter ranges from 0-1.
 
