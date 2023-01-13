@@ -532,4 +532,20 @@ Based on different factors such as socioeconomic weights f.e
 	1 as relation
 --> links (neigborhoods) must match empiric process -- spatial process must be represented
 
+# Spatial Interpolation 
+[Tobler Tool](https://github.com/pysal/tobler)
+[Medium User Test](https://medium.com/spatial-data-science/spatial-interpolation-with-python-a60b52f16cbb)
+
+Interpolation as tool to infer values not present in dataset based on measurements. 
+Point to surface. 
+
+Different methods are possible, all using weights and distance to interpolate between near measurements. 
+- Trendoberflächenmethode
+- Durschnittsmethode
+- Triangulated Irregular Network
+- Thiessen or Voronoi
+- IDW - inverse distance weighting
+- KDE - kernel density estimation
+
+
 

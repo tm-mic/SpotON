@@ -1,0 +1,74 @@
+{
+  "Zensus": {
+    "filepath": "/Volumes/PortableSSD/KInf_Projekt_Daten_2022/Datensätze/Zensus_Bevoelkerung_100m-Gitter.csv",
+    "columns": ["Gitter_ID_100m", "x_mp_100m", "y_mp_100m"],
+    "cols_keep": ["Gitter_ID_100m", "Bundesland", "GEN", "geometry"]
+  },
+
+  "Familie":
+  {
+    "filepath":  "/Volumes/PortableSSD/KInf_Projekt_Daten_2022/Datensätze/csv_Familien_100m_Gitter.zip;jsessionid=ACE5913D5375B832E613E39576C35615/Familie100m.csv",
+    "metadata": "/Users/msccomputinginthehumanities/Uni_Bamberg/02_Studium/03_WS22_23/Klnf-P Projekt/Datensatzbeschreibungen/Datensatzbeschreibung_Gitter100m_Familien.xlsx"
+  },
+
+  "Bevoelkerung":
+  {
+    "filepath": "/Volumes/PortableSSD/KInf_Projekt_Daten_2022/Datensätze/csv_Demographie_100m_Gitter.zip;jsessionid=71803AEAB6116C0A184033C414494111/Bevoelkerung100M.csv",
+    "metadata": "/Users/msccomputinginthehumanities/Uni_Bamberg/02_Studium/03_WS22_23/Klnf-P Projekt/Datensatzbeschreibungen/Datensatzbeschreibung_Gitter100m_Familien.xlsx"
+  },
+
+  "Gebaeude":
+  {
+    "filepath": "/Volumes/PortableSSD/KInf_Projekt_Daten_2022/Datensätze/csv_Gebaeude_100m_Gitter.zip;jsessionid=ACE5913D5375B832E613E39576C35615/Geb100m.csv",
+    "metadata": "/Users/msccomputinginthehumanities/Uni_Bamberg/02_Studium/03_WS22_23/Klnf-P Projekt/Datensatzbeschreibungen/Datensatzbeschreibung_Gitter100m_Familien.xlsx"
+  },
+
+  "Haushalte":
+  {
+    "filepath": "/Users/msccomputinginthehumanities/PycharmProjects/SpotON/files/Haushalte100m.csv",
+    "metadata": "/Users/msccomputinginthehumanities/Uni_Bamberg/02_Studium/03_WS22_23/Klnf-P Projekt/Datensatzbeschreibungen/Datensatzbeschreibung_Gitter100m_Familien.xlsx"
+
+  },
+  "data": {
+    "columns": ["Gitter_ID_100m", "Merkmal", "Auspraegung_Code", "Anzahl"]
+  },
+
+  "weight_mapping":
+      {
+    "GEBTYPGROESSE": {
+        "1": 0.75, "2": 0.25},
+    "HHTYP_FAM": {
+        "1": 0.75, "2": 0.5, "3": 0.25},
+    "ALTER_10JG": {
+        "0": 0, "4": 0.25, "3": 0.35, "2": 0.45, "1": 0.75}
+      },
+
+  "attr_mapping": {
+      "INSGESAMT": {"0": 0},
+      "GEBTYPGROESSE": {
+        "1": 1, "2": 1, "3": 1, "4": 1, "5": 1, "6": 1, "7": 2, "8": 2, "9": 2, "10": 2},
+      "HHTYP_FAM": {"1": 3, "2": 2, "3": 1, "4": 2, "5": 3},
+      "ALTER_10JG": {"1": 0, "2": 0, "3": 4, "4": 3, "5": 2, "6": 1, "7": 3, "8": 4, "9": 0}
+      },
+
+  "data_conversion":
+  {
+    "demographic_data": {"Merkmal":"category","Auspraegung_Code":"float16", "Anzahl": "category"},
+    "Zensus_data": {"x_mp_100m": "int32", "y_mp_100m": "int32"},
+    "ev_charging_points": {"Breitengrad": "float16", "Laegengrad": "float16"}
+  },
+
+  "ev_charging_points":
+  {
+    "filepath": "/Users/msccomputinginthehumanities/Downloads/Ladesaeulenregister_CSV_überarbeitung751d4fb453bd0e559c90f742aa2bd9518e4bfe22c5e01567deba98f6d1a6b504.csv",
+    "columns" : "Breitengrad,L?gengrad"
+  },
+
+  "shapefile":
+  {
+    "Bundesland": "/Volumes/PortableSSD/KInf_Projekt_Daten_2022/Datensätze/shapefiles/vg2500_12-31.utm32s.shape/vg2500/VG2500_LAN.shp",
+    "Gemeinden": "/Volumes/PortableSSD/KInf_Projekt_Daten_2022/Datensätze/shapefiles/vg5000_01-01.utm32s.shape.ebenen/vg5000_ebenen_0101/VG5000_GEM.shp",
+    "Landkreis":"/Volumes/PortableSSD/KInf_Projekt_Daten_2022/Datensätze/shapefiles/vg5000_01-01.utm32s.shape.ebenen/vg5000_ebenen_0101/VG5000_KRS.shp"
+  }
+}
+

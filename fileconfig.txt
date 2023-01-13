@@ -16,4 +16,17 @@ Haushalte
 COLUMNS:
 /Users/msccomputinginthehumanities/Uni_Bamberg/02_Studium/03_WS22_23/Klnf-P Projekt/Datensatzbeschreibungen/Datensatzbeschreibung_Gitter100m_Haushalte.xlsx
 
+Bevoelkerung
+/Users/msccomputinginthehumanities/Uni_Bamberg/02_Studium/03_WS22_23/Klnf-P Projekt/Datensätze/csv_Demographie_100m_Gitter.zip;jsessionid=71803AEAB6116C0A184033C414494111/Bevoelkerung100M.csv
+Gitter_ID_100m_neu;Mermal, Auspraegung_Code;Anzahl
+/Users/msccomputinginthehumanities/Uni_Bamberg/02_Studium/03_WS22_23/Klnf-P Projekt/Datensätze/Datensatzbeschreibung_Demograhie_100m_Gitter.xlsx;jsessionid=A7C245203FEF195F034F9B9AFE077CE0.xlsx
 
+Gebaeude
+/Users/msccomputinginthehumanities/Uni_Bamberg/02_Studium/03_WS22_23/Klnf-P Projekt/Datensätze/csv_Gebaeude_100m_Gitter.zip;jsessionid=ACE5913D5375B832E613E39576C35615/Geb100m.csv
+COLUMNS
+/Users/msccomputinginthehumanities/Uni_Bamberg/02_Studium/03_WS22_23/Klnf-P Projekt/Datensatzbeschreibungen/Datensatzbeschreibung_GebWhg_100m_Gitter.xlsx;jsessionid=ACE5913D5375B832E613E39576C35615.xlsx
+
+Ladestationen
+/Users/msccomputinginthehumanities/PycharmProjects/SpotON/files/Ladesaeulenregister.csv
+Breitengrad, Anzahl Ladepunkte,
+Other

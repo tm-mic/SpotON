@@ -1,13 +1,21 @@
 folium == 0.12.1
 geopy
 geopandas == 0.12.0
-shapely
+shapely~=1.8.5.post1
 folium
 pyproj
 scipy
-matplotlib
+matplotlib~=3.6.2
 fiona
 overpy
 openpyxl
 pandas~=1.5.1
 rtree
+tobler
+pysal
+geovoronoi[plotting]~=0.4.0
+distributed
+dask-geopandas
+
+numpy~=1.23.4
+dask~=2022.12.1+9.g80dd84d4
