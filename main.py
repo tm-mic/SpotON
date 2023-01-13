@@ -11,19 +11,19 @@ import pd_display_options
 warnings.simplefilter(action='ignore', category=FutureWarning)
 # TODO: provide bl by terminal input - use input() in a function checking against a dict specified by the
 # elements in the gem_shapefile
-bl = 'Bamberg'
+interest_area = 'Bamberg'
 
 # import all nec. config infos
 config_obj = ju.read_json("/Users/msccomputinginthehumanities/PycharmProjects/SpotON/IandO/config.json")
 zensus_conversion = ju.read_json_elements(config_obj, "data_conversion", "Zensus_data")
 demo_data_conversion = ju.read_json_elements(config_obj, "data_conversion", "demographic_data")
-bl_shapefile = ju.read_json_elements(config_obj, "shapefile", "Landkreis")
+area_shapefile = ju.read_json_elements(config_obj, "shapefile", "Landkreis")
 gem_shapefile = ju.read_json_elements(config_obj, "shapefile", "Gemeinden")
 zensus_file = ju.read_json_elements(config_obj, 'Zensus', "filepath")
 imp_cols = ju.read_json_elements(config_obj, 'Zensus', "columns")
 cols_keep = ju.read_json_elements(config_obj, 'Zensus', "cols_keep")
 data_df = pd.DataFrame
-bl_polygon = ss.obtain_bl_polygon(bl_shapefile, bl)
+bl_polygon = ss.obtain_bl_polygon(area_shapefile, interest_area)
 bev_data = ju.read_json_elements(config_obj, 'Bevoelkerung', "filepath")
 geb_data = ju.read_json_elements(config_obj, 'Gebaeude', "filepath")
 hau_data = ju.read_json_elements(config_obj, 'Haushalte', "filepath")
@@ -34,8 +34,10 @@ attr_mapping = ju.read_json_elements(config_obj, 'attr_mapping')
 weight_map = ju.read_json_elements(config_obj, 'weight_mapping')
 index_columns = ["Gitter_ID_100m", "Merkmal", "Auspraegung_Code", 'Bundesland', 'GEN', 'Attr Index', 'geometry']
 
-
 # import zensus file information to create shapely points
+# TODO: implement 2 options
+#  (1) use same operation as for data import. shortening the time necessary to import and especially to create geodataframe -> used when generated at runtime
+#  (2) use when writing to file : create csv with all data mapped in it.
 start = timeit.default_timer()
 lat_lon_df = ss.import_csv_chunks(zensus_file, imp_cols, type_conversion_dict=zensus_conversion, nrows=20000000)
 stop = timeit.default_timer()
@@ -43,8 +45,8 @@ print(f"Importing the Zensus data took {stop-start}")
 
 # create shapely points from zensus data files
 start = timeit.default_timer()
-bl_point_reference = ss.points_in_bundesland(bl, bl_shapefile, lat_lon_df, gem_shapefile).loc[:, cols_keep]
-bl_point_reference = bl_point_reference.loc[bl_point_reference['Bundesland'] == bl]
+area_point_reference = ss.points_in_bundesland(interest_area, area_shapefile, lat_lon_df, gem_shapefile).loc[:, cols_keep]
+area_point_reference = area_point_reference.loc[area_point_reference['Bundesland'] == interest_area]
 stop = timeit.default_timer()
 print(f"Computing a geoDataframe from the Zensus data took {stop-start}")
 
@@ -56,6 +58,7 @@ c = 0
 
 # TODO: create and concat all demographic data such that imported_bev + imported_fam ... can be used in the for data in imported_data loop || etract to function & loop through different files and concat after import
 # TODO: Error Handling, some of the data are sep. with ',' not with ';' f.e fam_data has a , sep and bev data has a ; sep -> use import function already written which handles these errors
+# TODO: Import Haushalte, but do not concat to final df but rather handle as seperate df. then easily merge in at the end with final dataframe
 while True:
     imported_data = pd.read_csv(bev_data, usecols=data_columns, engine='python', encoding_errors='replace', on_bad_lines="skip", chunksize=chunks, sep=';', dtype=zensus_conversion)
     for data in imported_data:
@@ -78,14 +81,14 @@ while True:
             continue
     break
 stop = timeit.default_timer()
-print(f"Data for {bev_data} in {bl} has been imported. This operation took {stop -start}s")
+print(f"Data for {bev_data} in {interest_area} has been imported. This operation took {stop - start}s")
 
 # merge zensus points and data inside the bounding box
 start = timeit.default_timer()
-bl_df = gpd.GeoDataFrame(bl_df.merge(bl_point_reference, how='left', on='Gitter_ID_100m').dropna(how='any'))
+bl_df = gpd.GeoDataFrame(bl_df.merge(area_point_reference, how='left', on='Gitter_ID_100m').dropna(how='any'))
 bl_df = bl_df.loc[:, ['Gitter_ID_100m', 'Merkmal', 'Auspraegung_Code', 'Anzahl', 'Bundesland', 'GEN', 'geometry']]
 stop = timeit.default_timer()
-print(f"The imported data for the Bundesland {bl} and the Zensus data have been merged. This operation took {stop -start}s")
+print(f"The imported data for the Bundesland {interest_area} and the Zensus data have been merged. This operation took {stop - start}s")
 
 # disaggregate age
 # TODO: find improvement in runtime. This section takes very long -> disaggregate_age_atr still works with itertuples
@@ -121,7 +124,7 @@ print(f'The weight of the Attr Code has been calculated. This operation took {st
 index_list = []
 gemeinden = bl_df.groupby('GEN')
 for name, gem in gemeinden:
-    # TODO: etract easily to function as all of these operations are done on same gem groups
+    # TODO: etract  to function easily as all of these operations are done on same gem groups
     codes_counts = gem.value_counts(subset=['Merkmal', 'Auspraegung_Code']).reset_index().rename({0: "Counts"}, axis=1)
     sum_codes = gem.groupby(['Merkmal', 'Auspraegung_Code'])['Anzahl'].sum().reset_index()
     attr_distro = sum_codes.merge(codes_counts, on=['Merkmal', 'Auspraegung_Code'], how='inner')
@@ -139,9 +142,10 @@ for name, gem in gemeinden:
         mask = cell.duplicated(subset=['Merkmal', 'Auspraegung_Code'], keep='first')
         cell = bed.rem_by_mask(cell, mask)
         index = cell['Attr Index'].sum()
-        index_list.append([id, bl, name, index, geo_point])
+        index_list.append([id, interest_area, name, index, geo_point])
 index_df = gpd.GeoDataFrame(pd.DataFrame(index_list, columns=['Gitter_ID_100m', 'Bundesland', 'Gemeinde', 'Cell Index', 'geometry']), geometry='geometry')
 
+# TODO: normalize Index with normalize function
 print(index_df)
 plot_geodataframe(index_df)
 print("done")
