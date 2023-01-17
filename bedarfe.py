@@ -156,3 +156,4 @@ def mult_col_dict(df, mapping, new_col, prdne, prdtwo, cond):
 
 
 
+print('commit')
