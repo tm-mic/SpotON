@@ -25,7 +25,7 @@
 
   "Haushalte":
   {
-    "filepath": "/Users/msccomputinginthehumanities/PycharmProjects/SpotON/files/Haushalte100m.csv",
+    "filepath": "",
     "metadata": "/Users/msccomputinginthehumanities/Uni_Bamberg/02_Studium/03_WS22_23/Klnf-P Projekt/Datensatzbeschreibungen/Datensatzbeschreibung_Gitter100m_Familien.xlsx"
 
   },
@@ -55,7 +55,7 @@
   {
     "demographic_data": {"Merkmal":"category","Auspraegung_Code":"float16", "Anzahl": "category"},
     "Zensus_data": {"x_mp_100m": "int32", "y_mp_100m": "int32"},
-    "ev_charging_points": {"Breitengrad": "float16", "Laegengrad": "float16"}
+    "ev_charging_points": {"Breitengrad": "float16", "Laengengrad": "float16"}
   },
 
   "ev_charging_points":
