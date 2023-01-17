@@ -21,8 +21,8 @@ def calc_distro_sum(val_sum: int, splitter: float) -> tuple:
               f"Splitter value required float: 0-1")
         raise AttributeError
 
-    group_one = val_sum * splitter
-    group_two = val_sum - group_one
+    group_one = int(val_sum) * splitter
+    group_two = int(val_sum) - group_one
     return group_one, group_two
 
 
@@ -75,6 +75,7 @@ def disaggregate_age_attr(
     # TODO: drop itertuples for faster vector implementation
     for row in alter_kurz.itertuples():
         splitter = rnd.uniform(dis_uneven_low, dis_uneven_high)
+        # TODO: Row.anzahl is string ; needs to be int
         val_tuple = calc_distro_sum(row.Anzahl, splitter)
         res_list = value_distro(row.Auspraegung_Code, val_tuple, row, attr_ident)
         group_one = res_list[0]
@@ -104,6 +105,7 @@ def remap_groups(df, mapping):
     """
     Based on a dict passed the Auspraegung Code of an Attr is changed.
     #TODO: Add Error Handling - keyError might occur when key is requested that does not exist.
+
     :param df: Dataframe to regroup
     :param mapping: dictionary providing a mapping to regroup. All groups that exist in df
     should be specified here.
@@ -155,5 +157,27 @@ def mult_col_dict(df, mapping, new_col, prdne, prdtwo, cond):
     return df
 
 
-
-print('commit')
+# def calc_cell_index():
+#     index_list = []
+#     for gem in gemeinde:
+#         codes_counts = gem.value_counts(subset=['Merkmal', 'Auspraegung_Code']).reset_index().rename({0: "Counts"}, axis=1)
+#         sum_codes = gem.groupby(['Merkmal', 'Auspraegung_Code'])['Anzahl'].sum().reset_index()
+#         attr_distro = sum_codes.merge(codes_counts, on=['Merkmal', 'Auspraegung_Code'], how='inner')
+#         attr_distro['Calc Distro Attr/Cell'] = attr_distro['Anzahl'].div(attr_distro['Counts'])
+#         attr_ratio = gem.value_counts(subset=['Merkmal'], normalize=True).reset_index()
+#         gem_vals = attr_distro.merge(attr_ratio, on='Merkmal', how='inner').rename({0: 'Ratio'}, axis=1)
+#         gem_vals['Gemeinde Fill Values'] = gem_vals['Calc Distro Attr/Cell']*gem_vals['Ratio']
+#         gem_vals = mult_col_dict(gem_vals, weight_map, new_col='Attr Index', prdne='Gemeinde Fill Values', prdtwo='Auspraegung_Code', cond='Merkmal')
+#
+#         cell_gem_group = gem.groupby('Gitter_ID_100m')
+#
+#         for id, cell in cell_gem_group:
+#             # TODO: etract easily to function as all of these operations are done on same cell groups
+#             geo_point = cell['geometry'].dropna().values[0]
+#             cell = cell.append(gem_vals)[index_columns].reset_index()
+#             mask = cell.duplicated(subset=['Merkmal', 'Auspraegung_Code'], keep='first')
+#             cell = bed.rem_by_mask(cell, mask)
+#             index = cell['Attr Index'].sum()
+#             index_list.append([id, interest_area, name, index, geo_point])
+#
+#     return index_list
