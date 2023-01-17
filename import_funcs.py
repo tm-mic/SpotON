@@ -56,8 +56,7 @@ def reproject(gdf: gpd.GeoDataFrame, epsg='EPSG:3035'):
 
 
 # Import Raw Data in Chunks
-def import_csv_chunks(filepath: str, header_list: object, type_conversion_dict=None, seperator=None, nrows=1,
-                      chunks=None) -> pd.DataFrame:
+def import_csv_chunks(filepath: str, header_list: object, type_conversion_dict=None, seperator=None, nrows=1, chunks=None) -> pd.DataFrame:
     """
     Read csv to DataFrame from passed file.
     :param chunksize:
@@ -70,12 +69,10 @@ def import_csv_chunks(filepath: str, header_list: object, type_conversion_dict=N
     try:
         if nrows == 1:
             return pandas.read_csv(filepath, sep=seperator, header=0, usecols=header_list,
-                                   engine='python', encoding_errors='replace', on_bad_lines="skip",
-                                   dtype=type_conversion_dict, chunksize=chunks)
+                                   engine='python', encoding_errors='replace', on_bad_lines="skip", dtype=type_conversion_dict, chunksize=chunks)
         else:
             return pandas.read_csv(filepath, sep=seperator, header=0, usecols=header_list,
-                                   engine='python', encoding_errors='replace', on_bad_lines="skip", nrows=nrows,
-                                   dtype=type_conversion_dict, chunksize=chunks)
+                                   engine='python', encoding_errors='replace', on_bad_lines="skip", nrows=nrows, dtype=type_conversion_dict, chunksize=chunks)
     except ValueError:
         return pandas.read_csv(filepath, sep=seperator, header=0, engine='python', encoding_errors='replace',
                                on_bad_lines="skip", nrows=nrows, dtype=type_conversion_dict, chunksize=chunks)
@@ -130,8 +127,8 @@ def id_to_lat_lon(id: str):
     :return:
     """
 
-    north = int(id[5:10] + '00')
-    east = int(id[11:15] + '000')
+    north = int(id[5:10]+'00')
+    east = int(id[11:15]+'000')
     return north, east
 
 
@@ -232,7 +229,7 @@ def calc_coord_mask(cond_val_one: int, data: pd.DataFrame, xoy='y', unary=True, 
         return mask_vals.apply(check_value_in_range, args=(cond_val_one, cond_val_two,))
 
 
-def ID_in_poly(poly_extrema: list, data):
+def data_in_poly(poly_extrema: list, data):
     """
     Gives back data which fall into the rectangle bounded by polygon extrema values [xmin, ymin, xmax, ymax].
     X values and Y values are calculated based the Gitter_ID_100m. Only Data that do fall into the range
@@ -257,44 +254,7 @@ def ID_in_poly(poly_extrema: list, data):
             data.drop(data[~east_mask].index, inplace=True)
             return True, data
         else:
-            return False, None
+            return False
     else:
-        return False, None
+        return False
 
-
-def data_poly_import(filepath: str, data_columns: list, poly_extrema: list, chunks: int, conversion: dict):
-    result: pd.DataFrame = pd.DataFrame()
-    c = 0
-    while True:
-        imported_data = pd.read_csv(filepath, usecols=data_columns, engine='python', encoding_errors='replace',
-                                    on_bad_lines="skip", chunksize=chunks, sep=r'(,|;)', dtype=conversion)
-
-        for data in imported_data:
-            in_poly = ID_in_poly(poly_extrema, data)
-
-            if in_poly[0]:
-                result = result.append(in_poly[1])
-                c += 1
-                print(
-                    f'\n{c} chunks of {filepath} have been added to the dataframe so far. \nThe current df has a size of {result.shape}')
-
-            north_min_mask = calc_coord_mask(poly_extrema[1], data, xoy='y')
-            north_max_mask = calc_coord_mask(poly_extrema[3], data, xoy='y')
-
-            if all_smaller(north_min_mask):
-                print("None of imported data in range of Polygon.")
-                continue
-
-            if all_bigger(north_max_mask):
-                print("This part of the dataset is north of the given Polygon. Data import is stopped.")
-                break
-
-            else:
-                continue
-
-        break
-    return result
-
-
-def converter(df, col='Anzahl'):
-    return pd.to_numeric(df.loc[:, col], errors='coerce', downcast='integer')

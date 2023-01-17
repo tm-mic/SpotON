@@ -11,12 +11,12 @@ import pd_display_options
 warnings.simplefilter(action='ignore', category=FutureWarning)
 # TODO: provide bl by terminal input - use input() in a function checking against a dict specified by the
 # elements in the gem_shapefile
-interest_area = 'Oberallgäu'
+interest_area = 'Bamberg'
 
 # import all nec. config infos
 config_obj = ju.read_json("/Users/msccomputinginthehumanities/PycharmProjects/SpotON/IandO/config.json")
 zensus_conversion = ju.read_json_elements(config_obj, "data_conversion", "Zensus_data")
-data_conversion = ju.read_json_elements(config_obj, "data_conversion", "demographic_data")
+demo_data_conversion = ju.read_json_elements(config_obj, "data_conversion", "demographic_data")
 area_shapefile = ju.read_json_elements(config_obj, "shapefile", "Landkreis")
 gem_shapefile = ju.read_json_elements(config_obj, "shapefile", "Gemeinden")
 zensus_file = ju.read_json_elements(config_obj, 'Zensus', "filepath")
@@ -28,19 +28,18 @@ bev_data = ju.read_json_elements(config_obj, 'Bevoelkerung', "filepath")
 geb_data = ju.read_json_elements(config_obj, 'Gebaeude', "filepath")
 hau_data = ju.read_json_elements(config_obj, 'Haushalte', "filepath")
 fam_data = ju.read_json_elements(config_obj, 'Familie', "filepath")
-data_list = [bev_data, geb_data, fam_data]
 data_columns = ju.read_json_elements(config_obj, 'data', "columns")
 chunks = 1000000
-attr_mapping = ju .read_json_elements(config_obj, 'attr_mapping')
+attr_mapping = ju.read_json_elements(config_obj, 'attr_mapping')
 weight_map = ju.read_json_elements(config_obj, 'weight_mapping')
 index_columns = ["Gitter_ID_100m", "Merkmal", "Auspraegung_Code", 'Bundesland', 'GEN', 'Attr Index', 'geometry']
-poly_extrema = ss.calc_poly_extrema(bl_polygon)
-bl_df = pd.DataFrame()
+
 # import zensus file information to create shapely points
 # TODO: implement 2 options
+#  (1) use same operation as for data import. shortening the time necessary to import and especially to create geodataframe -> used when generated at runtime
 #  (2) use when writing to file : create csv with all data mapped in it.
 start = timeit.default_timer()
-lat_lon_df = ss.data_poly_import(zensus_file, imp_cols, poly_extrema, chunks, zensus_conversion)
+lat_lon_df = ss.import_csv_chunks(zensus_file, imp_cols, type_conversion_dict=zensus_conversion, nrows=20000000)
 stop = timeit.default_timer()
 print(f"Importing the Zensus data took {stop-start}")
 
@@ -52,18 +51,35 @@ stop = timeit.default_timer()
 print(f"Computing a geoDataframe from the Zensus data took {stop-start}")
 
 # only import data that falls into given Bundesland
-
+poly_extrema = ss.calc_poly_extrema(bl_polygon)
+bl_df = pd.DataFrame()
 start = timeit.default_timer()
 c = 0
 
-# TODO: Error Handling, f.e file not found error needs to be catched
-# TODO: Import Haushalte, but do not concat to final df but rather handle as seperate df.
-#  then easily merge in at the end with final dataframe
-for data_set in data_list:
-    bl_df = bl_df.append(ss.data_poly_import(data_set, data_columns, poly_extrema, chunks, data_conversion))
+# TODO: create and concat all demographic data such that imported_bev + imported_fam ... can be used in the for data in imported_data loop || etract to function & loop through different files and concat after import
+# TODO: Error Handling, some of the data are sep. with ',' not with ';' f.e fam_data has a , sep and bev data has a ; sep -> use import function already written which handles these errors
+# TODO: Import Haushalte, but do not concat to final df but rather handle as seperate df. then easily merge in at the end with final dataframe
+while True:
+    imported_data = pd.read_csv(bev_data, usecols=data_columns, engine='python', encoding_errors='replace', on_bad_lines="skip", chunksize=chunks, sep=';', dtype=zensus_conversion)
+    for data in imported_data:
+        north_min_mask = ss.calc_coord_mask(poly_extrema[1], data, xoy='y')
+        north_max_mask = ss.calc_coord_mask(poly_extrema[3], data, xoy='y')
 
-bl_df['Anzahl'] = pd.to_numeric(bl_df['Anzahl'], errors='coerce', downcast='integer')
-print(bl_df.dtypes)
+        if ss.all_smaller(north_min_mask):
+            print("None of imported data in range of Polygon.")
+            continue
+        if ss.all_bigger(north_max_mask):
+            print("This part of the dataset is north of the given Polygon. Data import is stopped.")
+            break
+        in_poly = ss.data_in_poly(poly_extrema, data)
+        if in_poly[0]:
+            bl_df = bl_df.append(in_poly[1])
+            c += 1
+            print(bl_df.head(5), f'\n{c} chunks have been added to the dataframe so far. \nThe df has a size of {bl_df.shape}')
+        else:
+            print("Data is in range of y_max-y_min, but not in x_max-x_min. Import continues.")
+            continue
+    break
 stop = timeit.default_timer()
 print(f"Data for {bev_data} in {interest_area} has been imported. This operation took {stop - start}s")
 
