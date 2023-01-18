@@ -44,7 +44,7 @@ def value_distro(orig_group: int, distro_val: tuple, row: tuple, new_attr: str, 
     res_list = []
 
     group = keys[0]
-    res_list.append([row[1], new_attr, group, distro_val[0], row[5], row[5], row[7]])
+    res_list.append([row[1], new_attr, group, distro_val[0], row[5], row[6], row[7]])
     group = keys[1]
     res_list.append([row[1], new_attr, group, distro_val[1], row[5], row[6], row[7]])
 
@@ -66,7 +66,6 @@ def disaggregate_age_attr(
     :param dis_uneven_high: higher bound of rnd value
     :param alter_kurz: name of age attr to be disaggregated
     :param attr_ident: new attr identifier to be written back to dataframe
-    :param cols_to_keep: columns to be returned with final dataframe
     :return: Dataframe containing only disaggregated age groups.
     """
     alter_kurz = df.loc[df['Merkmal'] == alter_kurz]
@@ -75,7 +74,6 @@ def disaggregate_age_attr(
     # TODO: drop itertuples for faster vector implementation
     for row in alter_kurz.itertuples():
         splitter = rnd.uniform(dis_uneven_low, dis_uneven_high)
-        # TODO: Row.anzahl is string ; needs to be int
         val_tuple = calc_distro_sum(row.Anzahl, splitter)
         res_list = value_distro(row.Auspraegung_Code, val_tuple, row, attr_ident)
         group_one = res_list[0]

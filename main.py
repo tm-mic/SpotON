@@ -31,6 +31,7 @@ fam_data = ju.read_json_elements(config_obj, 'Familie', "filepath")
 data_list = [bev_data, geb_data, fam_data]
 data_columns = ju.read_json_elements(config_obj, 'data', "columns")
 
+anzahl_evs_zb = 1000 #TODO: Thomas please change this variable to absolute number of cars in zba
 
 point_ref_csv = ju.read_json_elements(config_obj, 'results', 'point_ref')
 data_csv = ju.read_json_elements(config_obj, 'results', 'data')
@@ -76,7 +77,6 @@ bl_df['Anzahl'] = pd.to_numeric(bl_df['Anzahl'], errors='coerce', downcast='inte
 stop = timeit.default_timer()
 print(f"Data for {bev_data} in {interest_area} has been imported. This operation took {stop - start}s")
 
-
 # merge zensus points and data inside the bounding box
 start = timeit.default_timer()
 bl_df = gpd.GeoDataFrame(bl_df.merge(area_point_reference, how='left', on='Gitter_ID_100m').dropna(how='any'))
@@ -93,9 +93,9 @@ bl_df = bl_df.append(age_disaggr)
 age_mask = bl_df.duplicated(subset=['Gitter_ID_100m', 'Merkmal', 'Auspraegung_Code'], keep='first')
 bl_df = bed.rem_by_mask(bl_df, age_mask)
 bl_df = bl_df.loc[bl_df['Merkmal'] != 'ALTER_KURZ']
+
 stop = timeit.default_timer()
 print(f'Age groups have been disaggregated. This operation took {stop-start}s')
-print((bl_df['GEN']==interest_area).any())
 
 # remap codes based on mapping dict
 bl_df = bed.remap_groups(bl_df, attr_mapping)
@@ -106,7 +106,6 @@ bl_df = bl_df.merge(cell_max, on="Gitter_ID_100m", how='inner')
 bl_df['% of tot Obs'] = bl_df[['Anzahl']].div(bl_df['TotalObservations'], axis=0)
 stop = timeit.default_timer()
 print(f'% of Attr Code counts to total observations has been calculated. This operation took {stop-start}s')
-print((bl_df['GEN']==interest_area).any())
 # multiply % of tot Obs with weight Mapping
 start = timeit.default_timer()
 bl_df = bed.mult_col_dict(bl_df, weight_map, new_col='Attr Index', prdne='% of tot Obs', prdtwo='Auspraegung_Code', cond='Merkmal')
@@ -119,7 +118,6 @@ index_list = bed.calc_cell_index(gemeinden, weight_map, index_columns, interest_
 index_df = gpd.GeoDataFrame(pd.DataFrame(index_list, columns=['Gitter_ID_100m', 'Bundesland', 'Gemeinde', 'Cell Index', 'geometry']), geometry='geometry')
 index_df = index_df.merge(hau_df, on='Gitter_ID_100m', how='left').dropna(how='any')
 index_df = index_df.loc[:, ['Gitter_ID_100m', 'Bundesland', 'Gemeinde', 'Cell Index', 'Anzahl', 'geometry']]
-print(bl_df['Gemeinde'].any())
 # normalize df between 0-1
 index_df['Cell Index'] = bed.normalize_column(index_df['Cell Index'])
 
@@ -127,7 +125,6 @@ ju.write_df_to_csv(index_df, index_csv, interest_area, sep=',')
 plot_geodataframe(index_df, 'Cell Index')
 print("The Cell indeces have been calculated. Next the amount of cars for each Gemeinde based on the cell indeces will be calculated.")
 
-anzahl_evs_zb = 1000
 index_df['Haushalte_Index'] = (index_df['Anzahl']*index_df['Cell Index'])
 gem_group = index_df.groupby(by='Gemeinde')
 gem_idx_dict = bed.calc_gemeinde_index(gem_group)
@@ -137,7 +134,6 @@ sum_zba = bed.calc_sum_zba(gemeinde_idx_dict)
 idx_keys = gemeinde_idx_dict.keys()
 
 ratios = bed.calc_gem_ratio(gemeinde_idx_dict, sum_zba)
+car_count = bed.calc_num_ev_gem(ratios, anzahl_evs_zb)
 
-print(bed.calc_num_ev_gem(ratios, anzahl_evs_zb))
-# TODO: gemeinde shows up in lk and gemeinde
 
