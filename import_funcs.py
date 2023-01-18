@@ -17,6 +17,10 @@ def create_points_from_crs(df, crs='EPSG:3035', lat_col='x_mp_100m', lon_col='y_
     return gdf.to_crs(crs)
 
 
+def read_shp(shp_path, cols: list):
+    return gpd.read_file(shp_path, encoding='utf-8')[cols]
+
+
 def obtain_bl_polygon(shp_path: str, bl_name: str):
     """
     Grabs a polygon from a shapefile.
@@ -26,7 +30,7 @@ def obtain_bl_polygon(shp_path: str, bl_name: str):
     :param epsg: CRS to cast the polygon to.
     :return: One polygon from shp with x polygons.
     """
-    polygon_gdf = gpd.read_file(shp_path, encoding='utf-8')[["GEN", "geometry"]]
+    polygon_gdf = read_shp(shp_path, ["GEN", "geometry"])
     polygon_gdf.rename(columns={'GEN': 'NAME'}, inplace=True)
     polygon_gdf = reproject(polygon_gdf)
     return polygon_gdf.where(polygon_gdf['NAME'] == bl_name).dropna()

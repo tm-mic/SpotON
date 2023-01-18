@@ -25,7 +25,7 @@
 
   "Haushalte":
   {
-    "filepath": "/Users/msccomputinginthehumanities/PycharmProjects/SpotON/files/Haushalte100m.csv",
+    "filepath": "/Volumes/PortableSSD/KInf_Projekt_Daten_2022/Datensätze/csv_Haushalte_100m_Gitter/Haushalte100m.csv",
     "metadata": "/Users/msccomputinginthehumanities/Uni_Bamberg/02_Studium/03_WS22_23/Klnf-P Projekt/Datensatzbeschreibungen/Datensatzbeschreibung_Gitter100m_Familien.xlsx"
 
   },
@@ -69,6 +69,13 @@
     "Bundesland": "/Volumes/PortableSSD/KInf_Projekt_Daten_2022/Datensätze/shapefiles/vg2500_12-31.utm32s.shape/vg2500/VG2500_LAN.shp",
     "Gemeinden": "/Volumes/PortableSSD/KInf_Projekt_Daten_2022/Datensätze/shapefiles/vg5000_01-01.utm32s.shape.ebenen/vg5000_ebenen_0101/VG5000_GEM.shp",
     "Landkreis":"/Volumes/PortableSSD/KInf_Projekt_Daten_2022/Datensätze/shapefiles/vg5000_01-01.utm32s.shape.ebenen/vg5000_ebenen_0101/VG5000_KRS.shp"
+  },
+  "results":
+  {
+    "folder_to_write": "/Volumes/PortableSSD/KInf_Projekt_Daten_2022/results",
+    "data": "/Volumes/PortableSSD/KInf_Projekt_Daten_2022/results/data",
+    "cell_index": "/Volumes/PortableSSD/KInf_Projekt_Daten_2022/results/cell_index",
+    "point_ref": "/Volumes/PortableSSD/KInf_Projekt_Daten_2022/results/point_ref"
   }
 }
 

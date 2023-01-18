@@ -157,27 +157,40 @@ def mult_col_dict(df, mapping, new_col, prdne, prdtwo, cond):
     return df
 
 
-# def calc_cell_index():
-#     index_list = []
-#     for gem in gemeinde:
-#         codes_counts = gem.value_counts(subset=['Merkmal', 'Auspraegung_Code']).reset_index().rename({0: "Counts"}, axis=1)
-#         sum_codes = gem.groupby(['Merkmal', 'Auspraegung_Code'])['Anzahl'].sum().reset_index()
-#         attr_distro = sum_codes.merge(codes_counts, on=['Merkmal', 'Auspraegung_Code'], how='inner')
-#         attr_distro['Calc Distro Attr/Cell'] = attr_distro['Anzahl'].div(attr_distro['Counts'])
-#         attr_ratio = gem.value_counts(subset=['Merkmal'], normalize=True).reset_index()
-#         gem_vals = attr_distro.merge(attr_ratio, on='Merkmal', how='inner').rename({0: 'Ratio'}, axis=1)
-#         gem_vals['Gemeinde Fill Values'] = gem_vals['Calc Distro Attr/Cell']*gem_vals['Ratio']
-#         gem_vals = mult_col_dict(gem_vals, weight_map, new_col='Attr Index', prdne='Gemeinde Fill Values', prdtwo='Auspraegung_Code', cond='Merkmal')
-#
-#         cell_gem_group = gem.groupby('Gitter_ID_100m')
-#
-#         for id, cell in cell_gem_group:
-#             # TODO: etract easily to function as all of these operations are done on same cell groups
-#             geo_point = cell['geometry'].dropna().values[0]
-#             cell = cell.append(gem_vals)[index_columns].reset_index()
-#             mask = cell.duplicated(subset=['Merkmal', 'Auspraegung_Code'], keep='first')
-#             cell = bed.rem_by_mask(cell, mask)
-#             index = cell['Attr Index'].sum()
-#             index_list.append([id, interest_area, name, index, geo_point])
-#
-#     return index_list
+def calc_cell_index(gemeinde_group, weight_map, index_columns, interest_area):
+    # TODO: extract functions
+    index_list = []
+    for name, gem in gemeinde_group:
+        codes_counts = gem.value_counts(subset=['Merkmal', 'Auspraegung_Code']).reset_index().rename({0: "Counts"}, axis=1)
+        sum_codes = gem.groupby(['Merkmal', 'Auspraegung_Code'])['Anzahl'].sum().reset_index()
+        attr_distro = sum_codes.merge(codes_counts, on=['Merkmal', 'Auspraegung_Code'], how='inner')
+        attr_distro['Calc Distro Attr/Cell'] = attr_distro['Anzahl'].div(attr_distro['Counts'])
+        attr_ratio = gem.value_counts(subset=['Merkmal'], normalize=True).reset_index()
+        gem_vals = attr_distro.merge(attr_ratio, on='Merkmal', how='inner').rename({0: 'Ratio'}, axis=1)
+        gem_vals['Gemeinde Fill Values'] = gem_vals['Calc Distro Attr/Cell']*gem_vals['Ratio']
+        gem_vals = mult_col_dict(gem_vals, weight_map, new_col='Attr Index', prdne='Gemeinde Fill Values', prdtwo='Auspraegung_Code', cond='Merkmal')
+
+        cell_gem_group = gem.groupby('Gitter_ID_100m')
+
+        for id, cell in cell_gem_group:
+            geo_point = cell['geometry'].dropna().values[0]
+            cell = cell.append(gem_vals)[index_columns].reset_index()
+            mask = cell.duplicated(subset=['Merkmal', 'Auspraegung_Code'], keep='first')
+            cell = rem_by_mask(cell, mask)
+            index = cell['Attr Index'].sum()
+            index_list.append([id, interest_area, name, index, geo_point])
+
+    return index_list
+
+
+def normalize_column(series: pd.Series, new_max=1, new_min=0) -> float:
+    """
+    Casts series data points between 0-1 based on min and max values in series.
+    :param: date_to_norm: int or float value to normalize.
+    :param: abs_min: Min val. in scope.
+    :param: abs_max: Max val. in scope.
+    :return: Normalized value between 0-1 of Dataframe.
+    """
+    abs_max = series.max()
+    abs_min = series.min()
+    return series.apply(lambda date: ((date - abs_min) / (abs_max - abs_min)) * (new_max - new_min) + new_min)

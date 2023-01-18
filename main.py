@@ -30,19 +30,27 @@ hau_data = ju.read_json_elements(config_obj, 'Haushalte', "filepath")
 fam_data = ju.read_json_elements(config_obj, 'Familie', "filepath")
 data_list = [bev_data, geb_data, fam_data]
 data_columns = ju.read_json_elements(config_obj, 'data', "columns")
+
+
+point_ref_csv = ju.read_json_elements(config_obj, 'results', 'point_ref')
+data_csv = ju.read_json_elements(config_obj, 'results', 'data')
+index_csv = ju.read_json_elements(config_obj, 'results', 'cell_index')
+
+
 chunks = 1000000
 attr_mapping = ju .read_json_elements(config_obj, 'attr_mapping')
 weight_map = ju.read_json_elements(config_obj, 'weight_mapping')
 index_columns = ["Gitter_ID_100m", "Merkmal", "Auspraegung_Code", 'Bundesland', 'GEN', 'Attr Index', 'geometry']
 poly_extrema = ss.calc_poly_extrema(bl_polygon)
 bl_df = pd.DataFrame()
+
+print("The program has started. Depending on the size of the area of interest or its geographical whereabouts the program might take a while to complete.")
 # import zensus file information to create shapely points
-# TODO: implement 2 options
-#  (2) use when writing to file : create csv with all data mapped in it.
 start = timeit.default_timer()
 lat_lon_df = ss.data_poly_import(zensus_file, imp_cols, poly_extrema, chunks, zensus_conversion)
 stop = timeit.default_timer()
 print(f"Importing the Zensus data took {stop-start}")
+
 
 # create shapely points from zensus data files
 start = timeit.default_timer()
@@ -51,19 +59,20 @@ area_point_reference = area_point_reference.loc[area_point_reference['Bundesland
 stop = timeit.default_timer()
 print(f"Computing a geoDataframe from the Zensus data took {stop-start}")
 
+ju.write_df_to_csv(area_point_reference, point_ref_csv, interest_area, sep=',')
 # only import data that falls into given Bundesland
-
 start = timeit.default_timer()
-c = 0
 
 # TODO: Error Handling, f.e file not found error needs to be catched
-# TODO: Import Haushalte, but do not concat to final df but rather handle as seperate df.
-#  then easily merge in at the end with final dataframe
 for data_set in data_list:
     bl_df = bl_df.append(ss.data_poly_import(data_set, data_columns, poly_extrema, chunks, data_conversion))
 
+ju.write_df_to_csv(bl_df, data_csv, interest_area, sep=',')
+
+hau_df = ss.data_poly_import(hau_data, data_columns, poly_extrema, chunks, data_conversion)
+hau_df = hau_df.loc[:, ['Gitter_ID_100m', 'Anzahl']].loc[hau_df['Merkmal'] == 'INSGESAMT']
+
 bl_df['Anzahl'] = pd.to_numeric(bl_df['Anzahl'], errors='coerce', downcast='integer')
-print(bl_df.dtypes)
 stop = timeit.default_timer()
 print(f"Data for {bev_data} in {interest_area} has been imported. This operation took {stop - start}s")
 
@@ -105,33 +114,14 @@ print(f'The weight of the Attr Code has been calculated. This operation took {st
 
 
 # calculate gemeinde fill values
-index_list = []
 gemeinden = bl_df.groupby('GEN')
-for name, gem in gemeinden:
-    # TODO: etract  to function easily as all of these operations are done on same gem groups
-    codes_counts = gem.value_counts(subset=['Merkmal', 'Auspraegung_Code']).reset_index().rename({0: "Counts"}, axis=1)
-    sum_codes = gem.groupby(['Merkmal', 'Auspraegung_Code'])['Anzahl'].sum().reset_index()
-    attr_distro = sum_codes.merge(codes_counts, on=['Merkmal', 'Auspraegung_Code'], how='inner')
-    attr_distro['Calc Distro Attr/Cell'] = attr_distro['Anzahl'].div(attr_distro['Counts'])
-    attr_ratio = gem.value_counts(subset=['Merkmal'], normalize=True).reset_index()
-    gem_vals = attr_distro.merge(attr_ratio, on='Merkmal', how='inner').rename({0: 'Ratio'}, axis=1)
-    gem_vals['Gemeinde Fill Values'] = gem_vals['Calc Distro Attr/Cell']*gem_vals['Ratio']
-    gem_vals = bed.mult_col_dict(gem_vals, weight_map, new_col='Attr Index', prdne='Gemeinde Fill Values', prdtwo='Auspraegung_Code', cond='Merkmal')
-
-    cell_gem_group = gem.groupby('Gitter_ID_100m')
-    for id, cell in cell_gem_group:
-        # TODO: etract easily to function as all of these operations are done on same cell groups
-        geo_point = cell['geometry'].dropna().values[0]
-        cell = cell.append(gem_vals)[index_columns].reset_index()
-        mask = cell.duplicated(subset=['Merkmal', 'Auspraegung_Code'], keep='first')
-        cell = bed.rem_by_mask(cell, mask)
-        index = cell['Attr Index'].sum()
-        index_list.append([id, interest_area, name, index, geo_point])
+index_list = bed.calc_cell_index(gemeinden, weight_map, index_columns, interest_area)
 index_df = gpd.GeoDataFrame(pd.DataFrame(index_list, columns=['Gitter_ID_100m', 'Bundesland', 'Gemeinde', 'Cell Index', 'geometry']), geometry='geometry')
-
+index_df = index_df.merge(hau_df, on='Gitter_ID_100m', how='left').dropna(how='any')
+index_df = index_df.loc[:, ['Gitter_ID_100m', 'Bundesland', 'Gemeinde', 'Cell Index', 'Anzahl', 'geometry']]
 # TODO: normalize Index with normalize function
-print(index_df)
-plot_geodataframe(index_df)
+index_df['Cell Index'] = bed.normalize_column(index_df['Cell Index'])
+
+ju.write_df_to_csv(index_df, index_csv, interest_area, sep=',')
+plot_geodataframe(index_df, 'Cell Index')
 print("done")
-# imported_data = pd.read_csv(fam_data, engine='python', encoding_errors='replace', on_bad_lines="skip", nrows=10000, sep=';')
-# data_in_extrema = ss.imp_only_bl_data(poly_extrema, imported_data)
