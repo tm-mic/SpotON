@@ -302,3 +302,44 @@ def data_poly_import(filepath: str, data_columns: list, poly_extrema: list, chun
 
 def converter(df, col='Anzahl'):
     return pd.to_numeric(df.loc[:, col], errors='coerce', downcast='integer')
+
+
+def import_vehicle_registration_by_excel(filepath: str):
+    """
+    :param filepath: Path to .xlsx of vehicle registration by district
+    :return: Dataframe containing registration district, amount of hybrid and full electric vehicles and the sum of both
+    """
+
+    df = pd.read_excel(filepath,
+                       sheet_name=4,
+                       names=['zba', 'Hybrid', 'Elektro'],
+                       usecols='D, I, K',
+                       dtype='object',
+                       skiprows=8)
+
+    df = df.dropna(how='any')
+
+    df['EV_ges'] = df['Hybrid'] + df['Elektro']
+
+    return df
+
+
+def import_charging_pole_register(filepath: str):
+    """
+    :param filepath: Path to csv of charging pole register
+    :return: Dataframe containing all charging poles with federal state, latitude, longitude and amount of charging points
+    """
+    df = pandas.read_csv(filepath,
+                         sep=None,
+                         header=0,
+                         engine='python',
+                         encoding_errors='replace',
+                         on_bad_lines="warn",
+                         encoding='cp1252',
+                         skiprows=9)
+
+    df = df.rename(columns=df.iloc[0]).loc[1:]
+
+    df = df[["Bundesland", "Breitengrad", "Längengrad", "Anzahl Ladepunkte"]]
+
+    return df
