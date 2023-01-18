@@ -158,6 +158,7 @@ def mult_col_dict(df, mapping, new_col, prdne, prdtwo, cond):
 
 
 def calc_cell_index(gemeinde_group, weight_map, index_columns, interest_area):
+
     # TODO: extract functions
     index_list = []
     for name, gem in gemeinde_group:
@@ -194,3 +195,58 @@ def normalize_column(series: pd.Series, new_max=1, new_min=0) -> float:
     abs_max = series.max()
     abs_min = series.min()
     return series.apply(lambda date: ((date - abs_min) / (abs_max - abs_min)) * (new_max - new_min) + new_min)
+
+
+def calc_gemeinde_index(gem_group):
+    """
+    Index is calculated as sum(Count_Haushalte * Cell_Index)
+
+    :param gem_group:
+    :return: Dictionary with Gemeinde name as key and gemeinde Index as value
+    """
+    gem_idx = {}
+    for name, gem in gem_group:
+        gem_index = gem.sum(numeric_only=True)['Haushalte_Index']
+        gem_idx.update({name: gem_index})
+    return gem_idx
+
+
+def calc_sum_zba(gem_idx_dict):
+    """
+    Calc the sum of all Gemeinden in the Zulassungsbezirk.
+
+    :param gem_idx_dict:
+    :return: Dataframe containing the sum of all gemeinde indeces.
+    """
+    return pd.DataFrame.from_dict(gem_idx_dict, orient='index').reset_index().sum()[0]
+
+
+def calc_gem_ratio(gemeinde_idx_dict, sum_zba):
+    """
+    Calculates the ratio of gemeinde index and the sum of all gemeinde indeces in the zba.
+
+    :param gemeinde_idx_dict:
+    :param sum_zba:
+    :return:
+    """
+    idx_keys = gemeinde_idx_dict.keys()
+    ratio_dict = {}
+    for key in idx_keys:
+        gem_idx = gemeinde_idx_dict.get(key)
+        ratio = gem_idx/sum_zba
+        ratio_dict.update({key:ratio})
+    return ratio_dict
+
+
+def calc_num_ev_gem(ratios: dict, anzahl_evs_zb: int) -> dict:
+    """
+    Multiplies the count of EV in ZBA with the gemeinde ratio.
+
+    :param ratios:
+    :param anzahl_evs_zb:
+    :return: Dict with number of cars in a gemeinde.
+    """
+    ev_dict= {}
+    for key in ratios.keys():
+        ev_dict.update({key: ratios.get(key)*anzahl_evs_zb})
+    return ev_dict
