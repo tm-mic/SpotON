@@ -2,6 +2,9 @@
 # Json Utility is the basic module to import csv files into a dataframe dictionary
 
 import json
+import csv
+
+import pandas as pd
 
 
 def read_json(file_path='config.json') -> object:
@@ -46,3 +49,10 @@ def read_json_elements(json_obj, file_ident, attr=None):
         return json_obj[file_ident][attr]
 
 
+def write_df_to_csv(df: pd.DataFrame, folderpath: str, aoi, sep=','):
+    df.to_csv(concat_filepath(aoi, folderpath), sep, index=False)
+    return
+
+
+def concat_filepath(aoi: str, folderpath: str, ending='.csv'):
+    return folderpath+aoi+ending
