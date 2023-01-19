@@ -86,3 +86,39 @@ def add_remaining_gemeinden(base_polygon_gdf, missinggemeinde, oels_gemeinde_in_
     oels_gemeinde_in_zula = oels_gemeinde_in_zula.sort_values('NAME_Zula')
     oels_gemeinde_in_zula = oels_gemeinde_in_zula.reset_index(drop=True)
     return oels_gemeinde_in_zula
+
+def set_geometry_to_gemeinde_poly(gemeinde_polygon_gdf,oels_gemeinde_in_zula):
+    """
+    Switches the geometries of the oels_gemeinde_in_zula with the geometries of the original
+    gemeinde_polygon_gdf(gemeindeshp; coord_to_polygon.load_gemeinde_polygon_to_gdf).
+
+    :param gemeinde_polygon_gdf: geodataframe of all gemeinden in germany
+    :param oels_gemeinde_in_zula: geodataframe with zulassungsbezirken, their gemeinden and the oels information
+    :return: geodataframe like oels_gemeinde_in_zula but gemeinde geometries
+    """
+    gemeinde_polygon_gdf = gemeinde_polygon_gdf.sort_values(by=['NAME', 'ARS'])
+    gemeinde_polygon_gdf = gemeinde_polygon_gdf.reset_index(drop=True)
+    oels_gemeinde_in_zula = oels_gemeinde_in_zula.sort_values(by=['NAME_Gemeinde', 'ARS'])
+    oels_gemeinde_in_zula = oels_gemeinde_in_zula.reset_index(drop=True)
+    gemeinde_ladestationen_poly = oels_gemeinde_in_zula.merge(gemeinde_polygon_gdf, left_index=True, right_index=True)
+    gemeinde_ladestationen_poly = gemeinde_ladestationen_poly[
+        ['ARS_x', 'NAME_Zula', 'NAME_Gemeinde', 'BEZ_x', 'Ladestationen',
+         'Anzahl Ladepunkte', 'geometry_y']]
+    gemeinde_ladestationen_poly.rename(columns={'ARS_x': 'ARS', 'BEZ_x': 'BEZ', 'geometry_y': 'geometry'}, inplace=True)
+    return gemeinde_ladestationen_poly
+
+def car_oels_gemeinde_zula_gdf(car_and_zula, gemeinde_ladestationen_poly):
+    """
+    Creates geodataframe with oels and cars in all zulassungsbezirke(oels per gemeinde,
+    cars per zulassungsbezirk). Merges them on their zula_name.
+
+    :param car_and_zula: gdf with all cars in zulassungsbezirk
+    :param gemeinde_ladestationen_poly: gdf with oels and gemeinde geometries
+    :return: gdf with oels, cars, zulas and gemeinden
+    """
+    gemeinde_ladestationen_poly = gemeinde_ladestationen_poly.merge(car_and_zula, left_on='NAME_Zula', right_on='NAME')
+    gemeinde_ladestationen_poly = gemeinde_ladestationen_poly[['ARS_x', 'NAME_Zula', 'NAME_Gemeinde', 'BEZ', 'Ladestationen',
+                                         'Anzahl Ladepunkte', 'Insgesamt_Pkw', 'PIHybrid',
+                                         'Elektro_BEV', 'EVIng', 'geometry_x']]
+    gemeinde_ladestationen_poly.rename(columns={'ARS_x': 'ARS', 'geometry_x': 'geometry'}, inplace=True)
+    return gemeinde_ladestationen_poly
