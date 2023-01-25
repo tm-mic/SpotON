@@ -5,20 +5,23 @@ import pandas as pd
 import IandO.json_utility as ju
 import bedarfe as bed
 import import_funcs as ss
-from geometry_operations.coord_to_polygon import plot_geodataframe
+from geometry_operations.coord_to_polygon import *
+import geometry_operations.ladestation_in_zulassungsbezirk as liz
 import pd_display_options
+from geometry_operations.oels_in_gemeinde import *
 
 warnings.simplefilter(action='ignore', category=FutureWarning)
 # TODO: provide bl by terminal input - use input() in a function checking against a dict specified by the
 # elements in the gem_shapefile
-interest_area = 'Oberallgäu'
+interest_area = 'OBERALLGAEU'
 
 # import all nec. config infos
-config_obj = ju.read_json("/Users/msccomputinginthehumanities/PycharmProjects/SpotON/IandO/config.json")
+config_obj = ju.read_json("E:/Universität/KInf-Projekt-BM/spoton/IandO/config.json")
 zensus_conversion = ju.read_json_elements(config_obj, "data_conversion", "Zensus_data")
 data_conversion = ju.read_json_elements(config_obj, "data_conversion", "demographic_data")
 area_shapefile = ju.read_json_elements(config_obj, "shapefile", "Landkreis")
 gem_shapefile = ju.read_json_elements(config_obj, "shapefile", "Gemeinden")
+kfz_shapefile = ju.read_json_elements(config_obj, "shapefile", "Zulassungsbezirk")
 zensus_file = ju.read_json_elements(config_obj, 'Zensus', "filepath")
 imp_cols = ju.read_json_elements(config_obj, 'Zensus', "columns")
 cols_keep = ju.read_json_elements(config_obj, 'Zensus', "cols_keep")
@@ -28,10 +31,11 @@ bev_data = ju.read_json_elements(config_obj, 'Bevoelkerung', "filepath")
 geb_data = ju.read_json_elements(config_obj, 'Gebaeude', "filepath")
 hau_data = ju.read_json_elements(config_obj, 'Haushalte', "filepath")
 fam_data = ju.read_json_elements(config_obj, 'Familie', "filepath")
-data_list = [bev_data, geb_data, fam_data]
+kfz_data = ju.read_json_elements(config_obj, "kfz_data", "filepath")
+ladestationen_data = ju.read_json_elements(config_obj, "ev_charging_points", "filepath")
+data_list = [bev_data, geb_data, fam_data, kfz_data]
 data_columns = ju.read_json_elements(config_obj, 'data', "columns")
 
-anzahl_evs_zb = 1000 #TODO: Thomas please change this variable to absolute number of cars in zba
 
 point_ref_csv = ju.read_json_elements(config_obj, 'results', 'point_ref')
 data_csv = ju.read_json_elements(config_obj, 'results', 'data')
@@ -125,15 +129,37 @@ ju.write_df_to_csv(index_df, index_csv, interest_area, sep=',')
 plot_geodataframe(index_df, 'Cell Index')
 print("The Cell indeces have been calculated. Next the amount of cars for each Gemeinde based on the cell indeces will be calculated.")
 
-index_df['Haushalte_Index'] = (index_df['Anzahl']*index_df['Cell Index'])
-gem_group = index_df.groupby(by='Gemeinde')
-gem_idx_dict = bed.calc_gemeinde_index(gem_group)
 
-gemeinde_idx_dict = bed.calc_gemeinde_index(gem_group)
-sum_zba = bed.calc_sum_zba(gemeinde_idx_dict)
-idx_keys = gemeinde_idx_dict.keys()
+kfz_data = ju.read_json_elements(config_obj, "kfz_data", "filepath")
+kfz_data = ss.import_vehicle_registration_by_excel(kfz_data)
 
-ratios = bed.calc_gem_ratio(gemeinde_idx_dict, sum_zba)
-car_count = bed.calc_num_ev_gem(ratios, anzahl_evs_zb)
+kfz_shapefile = liz.str_replace_of_name_in_base_polygon_gdf(kfz_shapefile)
+kfz_shapefile = liz.delete_doubled_zulassungsbezirke(kfz_shapefile)
+kfz_shapefile = liz.rename_names_of_some_cities(kfz_shapefile)
+
+kfz_data_in_shapefile = liz.cars_with_zulassungsbezirk_polygon_gdf(kfz_data, kfz_shapefile)
+
+gemeinden_polygon_gdf = load_gemeinde_polygon_to_gdf(gem_shapefile)
+ladestationen_gdf = ladestationen_to_gdf(ladestationen_data)
+# TODO: Get rid of "None" column in ladestationen_gdf
+
+ladesaeulen_in_gemeinde_gdf = oels_in_gemeinde(gemeinden_polygon_gdf, ladestationen_gdf)
+
+ladesaeulen_in_gemeinde_gdf = add_lp_to_gdf_gemeinde_oels(ladestationen_gdf, gemeinden_polygon_gdf, ladesaeulen_in_gemeinde_gdf)
+# TODO: Refactoring
+
+oels_gemeinde_in_zula = oels_of_gemeinde_in_zula(ladesaeulen_in_gemeinde_gdf, kfz_data_in_shapefile)
+
+missinggemeinde = lost_gemeinden_gdf(ladesaeulen_in_gemeinde_gdf)
+
+oels_gemeinde_in_zula = add_remaining_gemeinden(kfz_data_in_shapefile, missinggemeinde, oels_gemeinde_in_zula)
+
+gemeinde_ladestationen_poly = set_geometry_to_gemeinde_poly(gemeinden_polygon_gdf, oels_gemeinde_in_zula)
+
+gemeinde_ladestationen_poly = car_oels_gemeinde_zula_gdf(kfz_data_in_shapefile, gemeinde_ladestationen_poly)
+
+interest_area_ladestationen_poly = bed.calc_cars_in_interest_area(gemeinde_ladestationen_poly, index_df, interest_area)
+
+print("The amount of EV for each Gemeinde in the interest area has been calculated.")
 
 

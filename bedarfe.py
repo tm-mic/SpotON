@@ -248,3 +248,30 @@ def calc_num_ev_gem(ratios: dict, anzahl_evs_zb: int) -> dict:
     for key in ratios.keys():
         ev_dict.update({key: ratios.get(key)*anzahl_evs_zb})
     return ev_dict
+
+
+def calc_cars_in_interest_area(gemeinde_ladestationen_poly, index_df_path: str, interest_area: str):
+    index_df = pd.read_csv(index_df_path)
+
+    interest_area_ladestationen_poly = gemeinde_ladestationen_poly.loc[
+        gemeinde_ladestationen_poly['NAME_Zula'] == interest_area]
+
+    anzahl_evs_zb = interest_area_ladestationen_poly['EVIng'].iloc[0]
+
+    index_df['Haushalte_Index'] = (index_df['Anzahl'] * index_df['Cell Index'])
+    gem_group = index_df.groupby(by='Gemeinde')
+
+    gemeinde_idx_dict = calc_gemeinde_index(gem_group)
+    sum_zba = calc_sum_zba(gemeinde_idx_dict)
+
+    ratios = calc_gem_ratio(gemeinde_idx_dict, sum_zba)
+    car_count = calc_num_ev_gem(ratios, anzahl_evs_zb)
+
+    interest_area_ladestationen_poly.insert(10, 'EVGem',
+                                            interest_area_ladestationen_poly['NAME_Gemeinde'].map(car_count))
+
+    interest_area_ladestationen_poly.insert(11, 'Bedarf Ladepunkte',
+                                            ((interest_area_ladestationen_poly['EVGem'] / 11) -
+                                             interest_area_ladestationen_poly['Anzahl Ladepunkte']))
+
+    return interest_area_ladestationen_poly
