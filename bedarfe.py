@@ -1,5 +1,5 @@
 # function written by Christian L.
-
+import pandas
 import pandas as pd
 from pandas import DataFrame
 import random as rnd
@@ -250,21 +250,19 @@ def calc_num_ev_gem(ratios: dict, anzahl_evs_zb: int) -> dict:
     return ev_dict
 
 
-def calc_cars_in_interest_area(gemeinde_ladestationen_poly, index_df_path: str, interest_area: str):
-    index_df = pd.read_csv(index_df_path)
+def calc_cars_in_interest_area(gemeinde_ladestationen_poly, index_df, interest_area: str):
+
+    gemeinde_ladestationen_poly['NAME_Zula'] = gemeinde_ladestationen_poly['NAME_Zula'].str.upper()
+    gemeinde_ladestationen_poly['NAME_Zula'] = gemeinde_ladestationen_poly['NAME_Zula'].str.replace('Ü', 'UE')
+    gemeinde_ladestationen_poly['NAME_Zula'] = gemeinde_ladestationen_poly['NAME_Zula'].str.replace('Ä', 'AE')
+    gemeinde_ladestationen_poly['NAME_Zula'] = gemeinde_ladestationen_poly['NAME_Zula'].str.replace('Ö', 'OE')
 
     interest_area_ladestationen_poly = gemeinde_ladestationen_poly.loc[
         gemeinde_ladestationen_poly['NAME_Zula'] == interest_area]
 
     anzahl_evs_zb = interest_area_ladestationen_poly['EVIng'].iloc[0]
 
-    index_df['Haushalte_Index'] = (index_df['Anzahl'] * index_df['Cell Index'])
-    gem_group = index_df.groupby(by='Gemeinde')
-
-    gemeinde_idx_dict = calc_gemeinde_index(gem_group)
-    sum_zba = calc_sum_zba(gemeinde_idx_dict)
-
-    ratios = calc_gem_ratio(gemeinde_idx_dict, sum_zba)
+    ratios = calc_zula_ratio(index_df)
     car_count = calc_num_ev_gem(ratios, anzahl_evs_zb)
 
     interest_area_ladestationen_poly.insert(10, 'EVGem',
@@ -275,3 +273,23 @@ def calc_cars_in_interest_area(gemeinde_ladestationen_poly, index_df_path: str, 
                                              interest_area_ladestationen_poly['Anzahl Ladepunkte']))
 
     return interest_area_ladestationen_poly
+
+
+def add_gemeinde_index(index_df, ratios):
+    index_df.insert(6, 'Gemeinde_Index', index_df['Gemeinde'].map(ratios))
+
+    return index_df
+
+def add_haushalte_index(index_df):
+    index_df.insert(5, 'Haushalte_Index',
+                    (index_df['Anzahl'].astype('float64') * index_df['Cell Index'].astype('float64')))
+
+    return index_df
+
+def calc_zula_ratio(index_df):
+    gem_group = index_df.groupby(by='Gemeinde')
+    gemeinde_idx_dict = calc_gemeinde_index(gem_group)
+    sum_zba = calc_sum_zba(gemeinde_idx_dict)
+    ratios = calc_gem_ratio(gemeinde_idx_dict, sum_zba)
+
+    return ratios

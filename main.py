@@ -13,7 +13,7 @@ from geometry_operations.oels_in_gemeinde import *
 warnings.simplefilter(action='ignore', category=FutureWarning)
 # TODO: provide bl by terminal input - use input() in a function checking against a dict specified by the
 # elements in the gem_shapefile
-interest_area = 'OBERALLGAEU'
+interest_area = 'Oberallgäu'
 
 # import all nec. config infos
 config_obj = ju.read_json("E:/Universität/KInf-Projekt-BM/spoton/IandO/config.json")
@@ -33,7 +33,8 @@ hau_data = ju.read_json_elements(config_obj, 'Haushalte', "filepath")
 fam_data = ju.read_json_elements(config_obj, 'Familie', "filepath")
 kfz_data = ju.read_json_elements(config_obj, "kfz_data", "filepath")
 ladestationen_data = ju.read_json_elements(config_obj, "ev_charging_points", "filepath")
-data_list = [bev_data, geb_data, fam_data, kfz_data]
+data_list = [bev_data, geb_data, fam_data]
+# TODO: Update, rename or append data_list. Do not add kfz_data directly, it fucks up the whole import!!
 data_columns = ju.read_json_elements(config_obj, 'data', "columns")
 
 
@@ -124,9 +125,13 @@ index_df = index_df.merge(hau_df, on='Gitter_ID_100m', how='left').dropna(how='a
 index_df = index_df.loc[:, ['Gitter_ID_100m', 'Bundesland', 'Gemeinde', 'Cell Index', 'Anzahl', 'geometry']]
 # normalize df between 0-1
 index_df['Cell Index'] = bed.normalize_column(index_df['Cell Index'])
+index_df = bed.add_haushalte_index(index_df)
+ratios = bed.calc_zula_ratio(index_df)
+index_df = bed.add_gemeinde_index(index_df, ratios)
 
 ju.write_df_to_csv(index_df, index_csv, interest_area, sep=',')
-plot_geodataframe(index_df, 'Cell Index')
+# plot_geodataframe(index_df, 'Cell Index')
+# TODO: Fix plot_geodataframe, it should only take one positional argument instead of two
 print("The Cell indeces have been calculated. Next the amount of cars for each Gemeinde based on the cell indeces will be calculated.")
 
 
@@ -158,7 +163,8 @@ gemeinde_ladestationen_poly = set_geometry_to_gemeinde_poly(gemeinden_polygon_gd
 
 gemeinde_ladestationen_poly = car_oels_gemeinde_zula_gdf(kfz_data_in_shapefile, gemeinde_ladestationen_poly)
 
-interest_area_ladestationen_poly = bed.calc_cars_in_interest_area(gemeinde_ladestationen_poly, index_df, interest_area)
+interest_area_ladestationen_poly = bed.calc_cars_in_interest_area(gemeinde_ladestationen_poly, index_df, "OBERALLGAEU")
+# TODO: Implement consistent handling of lowercase and uppercase interest area str
 
 print("The amount of EV for each Gemeinde in the interest area has been calculated.")
 
