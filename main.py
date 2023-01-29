@@ -41,6 +41,7 @@ data_columns = ju.read_json_elements(config_obj, 'data', "columns")
 point_ref_csv = ju.read_json_elements(config_obj, 'results', 'point_ref')
 data_csv = ju.read_json_elements(config_obj, 'results', 'data')
 index_csv = ju.read_json_elements(config_obj, 'results', 'cell_index')
+gdf_csv = ju.read_json_elements(config_obj, 'results', 'gdf')
 
 
 chunks = 1000000
@@ -165,6 +166,8 @@ gemeinde_ladestationen_poly = car_oels_gemeinde_zula_gdf(kfz_data_in_shapefile, 
 
 interest_area_ladestationen_poly = bed.calc_cars_in_interest_area(gemeinde_ladestationen_poly, index_df, "OBERALLGAEU")
 # TODO: Implement consistent handling of lowercase and uppercase interest area str
+
+ju.write_df_to_csv(interest_area_ladestationen_poly, gdf_csv, interest_area, sep=',')
 
 print("The amount of EV for each Gemeinde in the interest area has been calculated.")
 

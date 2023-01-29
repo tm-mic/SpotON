@@ -80,9 +80,10 @@
   "results":
   {
     "folder_to_write": "E:/Daten/results",
-    "data": "E:/Daten/results/",
-    "cell_index": "E:/Daten/results/",
-    "point_ref": "E:/Daten/results"
+    "data": "E:/Daten/results/data",
+    "cell_index": "E:/Daten/results/cell_index",
+    "point_ref": "E:/Daten/results/point_ref",
+    "gdf": "E:/Daten/results/gdf"
   }
 }
 
