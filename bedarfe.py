@@ -40,7 +40,7 @@ def value_distro(orig_group: int, distro_val: tuple, row: tuple, new_attr: str, 
     if group_mapping is None:
         group_mapping = {1: [1, 2], 2: [3, -1], 3: [4, 5], 4: [6, 7], 5: [8, 9]}
 
-    keys = group_mapping.get(orig_group)
+    keys = group_mapping.get(int(orig_group))
     res_list = []
 
     group = keys[0]
@@ -102,7 +102,7 @@ def rem_by_mask(df: pd.DataFrame, mask: pd.Series, val=True):
 def remap_groups(df, mapping):
     """
     Based on a dict passed the Auspraegung Code of an Attr is changed.
-    #TODO: Add Error Handling - keyError might occur when key is requested that does not exist.
+
 
     :param df: Dataframe to regroup
     :param mapping: dictionary providing a mapping to regroup. All groups that exist in df
@@ -111,7 +111,7 @@ def remap_groups(df, mapping):
     """
     mapping_keys = list(mapping.keys())
     df = df.loc[df['Merkmal'].isin(mapping_keys)]
-
+    #TODO: Add Error Handling - keyError might occur when key is requested that does not exist.
     for key in mapping_keys:
         group_map = mapping.get(key)
         df['Auspraegung_Code'] = df.apply(lambda x: group_map[x['Auspraegung_Code']] if x['Merkmal'] == key else x['Auspraegung_Code'], axis=1)
@@ -206,7 +206,7 @@ def calc_gemeinde_index(gem_group):
     for name, gem in gem_group:
         gem_index = gem.sum(numeric_only=True)['Haushalte_Index']
         gem_idx.update({name: gem_index})
-    return gem_idx
+    return pd.DataFrame.from_dict(gem_idx, columns=['Gemeinde', 'Index'], orient='index').reset_index()
 
 
 def calc_sum_zba(gem_idx_dict):

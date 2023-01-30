@@ -2,7 +2,8 @@ import geopandas
 import geopandas as gpd
 import pandas
 import pandas as pd
-
+from pyarrow import csv
+import pyarrow as pa
 
 def create_points_from_crs(df, crs='EPSG:3035', lat_col='x_mp_100m', lon_col='y_mp_100m'):
     """
@@ -85,23 +86,20 @@ def import_csv_chunks(filepath: str, header_list: object, type_conversion_dict=N
                                on_bad_lines="skip", nrows=nrows, dtype=type_conversion_dict, chunksize=chunks)
 
 
-def points_in_bundesland(bl: str, bl_shapefile, lat_lon_df, gem_shapefile):
+def points_in_bundesland(interest_area, aoi_polygon, lat_lon_df, gem_shapefile):
     """
-    Only return points in Bundesland.
+    Only return points in AOI.
 
-    :param bl:
-    :param bl_shapefile:
     :param lat_lon_df:
     :param gem_shapefile:
     :return:
     """
     lat_lon_df = create_points_from_crs(lat_lon_df)
-    bl_polygon = obtain_bl_polygon(bl_shapefile, bl)
-    point_gdf = clip_crs_by_polygon(bl_polygon, lat_lon_df)
-    point_gdf['Bundesland'] = bl
+    point_gdf = clip_crs_by_polygon(aoi_polygon, lat_lon_df)
+    point_gdf['AOI'] = interest_area
     gemeinden = reproject(gpd.GeoDataFrame.from_file(gem_shapefile))
-    bl_gemeinden = clip_crs_by_polygon(bl_polygon, gemeinden).loc[:, ['GEN', 'geometry']]
-    return point_gdf.sjoin(bl_gemeinden, how='left', predicate='covered_by').dropna(subset='GEN')
+    aoi_gemeinden = clip_crs_by_polygon(aoi_polygon, gemeinden).loc[:, ['GEN', 'geometry']]
+    return point_gdf.sjoin(aoi_gemeinden, how='left', predicate='covered_by').dropna(subset='GEN')
 
 
 def geo_points_from_id(id: str):
@@ -340,6 +338,48 @@ def import_charging_pole_register(filepath: str):
 
     df = df.rename(columns=df.iloc[0]).loc[1:]
 
-    df = df[["Bundesland", "Breitengrad", "Längengrad", "Anzahl Ladepunkte"]]
+    df = df[["AOI", "Breitengrad", "Längengrad", "Anzahl Ladepunkte"]]
 
     return df
+
+
+def read_df(path: str, cols, sep=';'):
+    sep = sep
+    read_options = csv.ReadOptions(autogenerate_column_names=False, use_threads=True)
+    parse_options = csv.ParseOptions(delimiter=sep, invalid_row_handler=invalid_row_handler)
+    convert = csv.ConvertOptions(include_columns=cols)
+    #TODO: optimization: value error when option string_to_bool and use_multithread is passed to_pandas()
+    try:
+        return csv.read_csv(path, read_options, parse_options).to_pandas()
+    except FileNotFoundError:
+        print(f"The file {path} you are trying to read does not exist."
+              f" Set the correct filepath in 'config.json'.")
+        raise FileNotFoundError
+
+
+
+
+def write_pyarrow_to_csv(df, folderpath, filename, sep):
+    write_options = csv.WriteOptions(delimiter=sep)
+    df = pa.Table.from_pandas(df=df)
+    csv.write_csv(df, concat_filepath(folderpath, filename), write_options)
+    return
+
+
+def concat_filepath(folderpath: str, aoi: str, ident='',  ending='.parquet'):
+    return folderpath+aoi+ident+ending
+
+
+def write_df_to_csv(df: pd.DataFrame, folderpath: str, aoi, sep=','):
+    df.to_csv(concat_filepath(folderpath, aoi), sep, index=False)
+    return
+
+
+def invalid_row_handler(row):
+    """
+    Callable called by pyarrow import function
+    skipping invalid rows in pyarrow table.
+
+    :return: str "skip "
+    """
+    return "skip"
