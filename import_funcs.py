@@ -4,6 +4,9 @@ import pandas
 import pandas as pd
 from pyarrow import csv
 import pyarrow as pa
+from shapely.geometry import Point
+
+>>>>>>> import_funcs.py
 
 def create_points_from_crs(df, crs='EPSG:3035', lat_col='x_mp_100m', lon_col='y_mp_100m'):
     """
@@ -33,6 +36,12 @@ def obtain_bl_polygon(shp_path: str, bl_name: str):
     """
     polygon_gdf = read_shp(shp_path, ["GEN", "geometry"])
     polygon_gdf.rename(columns={'GEN': 'NAME'}, inplace=True)
+    # polygon_gdf['NAME'] = polygon_gdf['NAME'].str.upper()
+    # polygon_gdf['NAME'] = polygon_gdf['NAME'].str.replace('Ü', 'UE')
+    # polygon_gdf['NAME'] = polygon_gdf['NAME'].str.replace('Ä', 'AE')
+    # polygon_gdf['NAME'] = polygon_gdf['NAME'].str.replace('Ö', 'OE')
+    # polygon_gdf = polygon_gdf.sort_values('NAME')
+    # polygon_gdf = polygon_gdf.reset_index(drop=True)
     polygon_gdf = reproject(polygon_gdf)
     return polygon_gdf.where(polygon_gdf['NAME'] == bl_name).dropna()
 
@@ -310,14 +319,15 @@ def import_vehicle_registration_by_excel(filepath: str):
 
     df = pd.read_excel(filepath,
                        sheet_name=4,
-                       names=['zba', 'Hybrid', 'Elektro'],
-                       usecols='D, I, K',
+                       names=['NAME', 'Insgesamt_Pkw', 'PIHybrid', 'Elektro_BEV'],
+                       usecols='D, E, J, K',
                        dtype='object',
                        skiprows=8)
 
     df = df.dropna(how='any')
-
-    df['EV_ges'] = df['Hybrid'] + df['Elektro']
+    df['EVIng'] = df['PIHybrid'] + df['Elektro_BEV']
+    df['NAME'] = df['NAME'].str.slice(7, )
+    df = df.sort_values('NAME')
 
     return df
 
@@ -339,6 +349,18 @@ def import_charging_pole_register(filepath: str):
     df = df.rename(columns=df.iloc[0]).loc[1:]
 
     df = df[["AOI", "Breitengrad", "Längengrad", "Anzahl Ladepunkte"]]
+
+    df['Breitengrad'] = df['Breitengrad'].str.replace(',', '.').astype(float)
+    df['Längengrad'] = df['Laengengrad'].str.replace(',', '.').astype(float)
+    df['geometry'] = df.apply(lambda x: Point((float(x.Laengengrad), float(x.Breitengrad))),
+                              axis=1)
+
+    del df['Breitengrad']
+    del df['Laengengrad']
+
+    df['Anzahl Ladepunkte'] = df['Anzahl Ladepunkte'].astype('int64')
+    df = df.set_crs(crs='WGS 84', epsg='EPSG:3857')
+    df = df.to_crs(crs='EPSG:3035')
 
     return df
 
