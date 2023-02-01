@@ -54,8 +54,8 @@ def value_distro(orig_group: int, distro_val: tuple, row: tuple, new_attr: str, 
 
 def disaggregate_age_attr(
         df: pd.DataFrame,
-        dis_uneven_low=0.45,
-        dis_uneven_high=0.55,
+        dis_low=0.45,
+        dis_high=0.55,
         alter_kurz='ALTER_KURZ',
         attr_ident='ALTER_10JG'
 ) -> DataFrame:
@@ -63,8 +63,8 @@ def disaggregate_age_attr(
     Runs through dataframe and disaggregates attr val data into provided groups by given splitter value.
 
     :param df: raw data to pass.
-    :param dis_uneven_low: lower bound of rnd value
-    :param dis_uneven_high: higher bound of rnd value
+    :param dis_low: lower bound of rnd value
+    :param dis_high: higher bound of rnd value
     :param alter_kurz: name of age attr to be disaggregated
     :param attr_ident: new attr identifier to be written back to dataframe
     :return: Dataframe containing only disaggregated age groups.
@@ -74,7 +74,7 @@ def disaggregate_age_attr(
     cols = df.columns
     # TODO: drop itertuples for faster vector implementation
     for row in alter_kurz.itertuples():
-        splitter = rnd.uniform(dis_uneven_low, dis_uneven_high)
+        splitter = rnd.uniform(dis_low, dis_high)
         val_tuple = calc_distro_sum(row.Anzahl, splitter)
         res_list = value_distro(row.Auspraegung_Code, val_tuple, row, attr_ident)
         group_one = res_list[0]
@@ -157,7 +157,7 @@ def mult_col_dict(df, mapping, new_col, prdne, prdtwo, cond):
 
 
 def calc_cell_index(gemeinde_group, weight_map, index_columns, interest_area):
-
+# TODO: seperate gemeinde fill and index calc in calc cell index func
     # TODO: extract functions
     index_list = []
     for name, gem in gemeinde_group:
@@ -281,6 +281,7 @@ def add_gemeinde_index(index_df, ratios):
     index_df.insert(6, 'Gemeinde_Index', index_df['Gemeinde'].map(ratios))
 
     return index_df
+
 
 def add_haushalte_index(index_df):
     index_df.insert(5, 'Haushalte_Index',
