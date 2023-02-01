@@ -16,6 +16,7 @@ import pd_display_options
 from matplotlib import pyplot as plt
 from geometry_operations import ladestation_in_zulassungsbezirk as liz
 from geometry_operations.coord_to_polygon import load_gemeinde_polygon_to_gdf as lgp
+from geometry_operations.coord_to_polygon import ladestationen_to_gdf as lsg
 from geometry_operations import oels_in_gemeinde as og
 from IandO.user_input import ui_aoi as ui
 
@@ -254,7 +255,7 @@ if fe.path_exists(ifunc.concat_filepath(gdf, interest_area)) is False:
     kfz_data_in_shapefile = liz.cars_with_zulassungsbezirk_polygon_gdf(kfz_data, kfz_shapefile)
 
     gemeinden_polygon_gdf = lgp(gem_shapefile)
-    ladestationen_gdf = lgp(ladestationen_data)
+    ladestationen_gdf = lsg(ladestationen_data)
     # TODO: Get rid of "None" column in ladestationen_gdf
 
     ladesaeulen_in_gemeinde_gdf = og.oels_in_gemeinde(gemeinden_polygon_gdf, ladestationen_gdf)
@@ -275,13 +276,15 @@ if fe.path_exists(ifunc.concat_filepath(gdf, interest_area)) is False:
 
     interest_area_ladestationen_poly = bed.calc_cars_in_interest_area(gemeinde_ladestationen_poly, index_df,
                                                                       interest_area)
-    # TODO: Implement consistent handling of lowercase and uppercase interest area str
+    # TODO: Throws Errors for caps and umlauts. Implement consistent handling
+    # TODO: See bedarfe.py for consistent handling of different types of aoi
 
-    interest_area_ladestationen_poly.to_parquet(ifunc.concat_filepath(gdf_csv, interest_area))
-
-    print("The amount of EV for each Gemeinde in the interest area has been calculated.")
-else:
-    cars_in_aoi = gpd.read_parquet(ifunc.concat_filepath(gdf_csv, interest_area))
+#     interest_area_ladestationen_poly.to_parquet(ifunc.concat_filepath(gdf_csv, interest_area))
+#
+#     print("The amount of EV for each Gemeinde in the interest area has been calculated.")
+# else:
+#     cars_in_aoi = gpd.read_parquet(ifunc.concat_filepath(gdf_csv, interest_area))
+# TODO: Handle writing of interest_area_ladestationen_poly to parquet
 
 totaltimestop = timeit.default_timer()
 print(totaltimestop - totaltimes)
