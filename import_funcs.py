@@ -20,7 +20,7 @@ def create_points_from_crs(df, crs='EPSG:3035', lat_col='x_mp_100m', lon_col='y_
     return gdf.to_crs(crs)
 
 
-def read_shp(shp_path, cols: list):
+def read_shp(shp_path, cols):
     return gpd.read_file(shp_path, encoding='utf-8')[cols]
 
 
@@ -35,12 +35,6 @@ def obtain_bl_polygon(shp_path: str, bl_name: str):
     """
     polygon_gdf = read_shp(shp_path, ["GEN", "geometry"])
     polygon_gdf.rename(columns={'GEN': 'NAME'}, inplace=True)
-    # polygon_gdf['NAME'] = polygon_gdf['NAME'].str.upper()
-    # polygon_gdf['NAME'] = polygon_gdf['NAME'].str.replace('Ü', 'UE')
-    # polygon_gdf['NAME'] = polygon_gdf['NAME'].str.replace('Ä', 'AE')
-    # polygon_gdf['NAME'] = polygon_gdf['NAME'].str.replace('Ö', 'OE')
-    # polygon_gdf = polygon_gdf.sort_values('NAME')
-    # polygon_gdf = polygon_gdf.reset_index(drop=True)
     polygon_gdf = reproject(polygon_gdf)
     return polygon_gdf.where(polygon_gdf['NAME'] == bl_name).dropna()
 
@@ -68,33 +62,8 @@ def reproject(gdf: gpd.GeoDataFrame, epsg='EPSG:3035'):
     return gdf.to_crs(crs=epsg)
 
 
-# Import Raw Data in Chunks
-def import_csv_chunks(filepath: str, header_list: object, type_conversion_dict=None, seperator=None, nrows=1,
-                      chunks=None) -> pd.DataFrame:
-    """
-    Read csv to DataFrame from passed file.
-    :param chunksize:
-    :param type_conversion_dict: Conversion of types to reduce memory use.
-    :param filepath: Path to csv file.
-    :param header_list: List of headers to be read.
-    :param nrows: Count of rows to import. Default "1" will import all rows of csv.
-    :return: DataFrame with specified columns.
-    """
-    try:
-        if nrows == 1:
-            return pandas.read_csv(filepath, sep=seperator, header=0, usecols=header_list,
-                                   engine='python', encoding_errors='replace', on_bad_lines="skip",
-                                   dtype=type_conversion_dict, chunksize=chunks)
-        else:
-            return pandas.read_csv(filepath, sep=seperator, header=0, usecols=header_list,
-                                   engine='python', encoding_errors='replace', on_bad_lines="skip", nrows=nrows,
-                                   dtype=type_conversion_dict, chunksize=chunks)
-    except ValueError:
-        return pandas.read_csv(filepath, sep=seperator, header=0, engine='python', encoding_errors='replace',
-                               on_bad_lines="skip", nrows=nrows, dtype=type_conversion_dict, chunksize=chunks)
 
-
-def points_in_bundesland(interest_area, aoi_polygon, lat_lon_df, gem_shapefile):
+def points_in_aoi(interest_area, aoi_polygon, lat_lon_df, gem_shapefile):
     """
     Only return points in AOI.
 
@@ -110,27 +79,6 @@ def points_in_bundesland(interest_area, aoi_polygon, lat_lon_df, gem_shapefile):
     return point_gdf.sjoin(aoi_gemeinden, how='left', predicate='covered_by').dropna(subset='GEN')
 
 
-def geo_points_from_id(id: str):
-    """
-    Creates points from crs ID by slicing N/E info from ID.
-
-    :return:
-    """
-    north = id_to_lat_lon(id)[0]
-    east = id_to_lat_lon(id)[1]
-    df = pd.DataFrame(data={'x': [east], 'y': [north]})
-    return gpd.points_from_xy(df['x'], df['y'], crs='EPSG:3035')
-
-
-def calc_poly_extrema(polygon):
-    """
-    Calculates the extrema values of a polygon on one axis.
-    :param polygon: Polygon or any other geometry.
-    :return:
-    """
-    return polygon.total_bounds.tolist()
-
-
 def id_to_lat_lon(id: str):
     """
     Slices string in two positions.
@@ -143,171 +91,6 @@ def id_to_lat_lon(id: str):
     north = int(id[5:10] + '00')
     east = int(id[11:15] + '000')
     return north, east
-
-
-def get_lat_lon_series(df: pd.DataFrame, north=True) -> pd.Series:
-    """
-    Extracts y(north) and x(east) values from coordinate IDs as specified by DE_GRID ETRS89 UTM32 100m
-
-    :param df:
-    :param north:
-    :return: pd.Series of ints with
-    """
-    if north:
-        return df.loc[:, 'Gitter_ID_100m'].apply(id_to_lat_lon).apply(lambda val: val[0])
-    else:
-        return df.loc[:, 'Gitter_ID_100m'].apply(id_to_lat_lon).apply(lambda val: val[1])
-
-
-def check_value_in_range(input_val: int, minimum: int, maximum: int) -> bool:
-    """
-    Checks if an input value lies in between two given values min and max.
-
-    :param input_val:
-    :param minimum:
-    :param maximum:
-    :return:
-    """
-    if minimum < input_val < maximum:
-        return True
-    else:
-        return False
-
-
-def check_against_cond_val(input_val: int, cond_val: int) -> bool:
-    """
-    Checks if a given input value is smaller than the condition.
-
-    :param input_val:
-    :param cond_val:
-    :return:
-    """
-    if cond_val > input_val:
-        return True
-    else:
-        return False
-
-
-def all_smaller(mask: pd.Series) -> bool:
-    """
-    Returns true if condition True applies to all rows in a pd.Series.
-    Used to create mask for data import check.
-
-    :param mask:
-    :return:
-    """
-
-    if mask.all():
-        return True
-    else:
-        return False
-
-
-def all_bigger(mask: pd.Series) -> bool:
-    """
-    Returns False if condition True applies to all rows in a pd.Series.
-    Used to create mask for data import check.
-
-    :param mask:
-    :return:
-    """
-    if mask.all():
-        return False
-    else:
-        return True
-
-
-def calc_coord_mask(cond_val_one: int, data: pd.DataFrame, xoy='y', unary=True, cond_val_two=None) -> pd.Series:
-    """
-    Creates a conditional mask(bools) based on unary x < val_one operation if unary == True. If unary == False
-    creates a conditional mask (bools) based on val_one < x < val_two condition.
-
-    :param cond_val_one: val_one for x < val_one or val_one < x < val_two check
-    :param data: df
-    :param xoy: to check with x or y value
-    :param cond_val_two: second value for val_one < x < val_two operation
-    :return: pd.Series of bool values
-    """
-    if unary:
-        if xoy == 'y':
-            mask_vals = get_lat_lon_series(data, north=True)
-        else:
-            mask_vals = get_lat_lon_series(data, north=False)
-        return mask_vals.apply(check_against_cond_val, args=(cond_val_one,))
-    else:
-        if xoy == 'y':
-            mask_vals = get_lat_lon_series(data, north=True)
-        else:
-            mask_vals = get_lat_lon_series(data, north=False)
-        return mask_vals.apply(check_value_in_range, args=(cond_val_one, cond_val_two,))
-
-
-def ID_in_poly(poly_extrema: list, data):
-    """
-    Gives back data which fall into the rectangle bounded by polygon extrema values [xmin, ymin, xmax, ymax].
-    X values and Y values are calculated based the Gitter_ID_100m. Only Data that do fall into the range
-    xmin - xmax and ymin - ymax are returned in the result dataframe.
-
-    :param df: df to append to
-    :param data: data that are being imported
-    :param poly_extrema: extrema points of a polygon
-    :param data_columns: columns to return
-    :return: DataFrame of data inside a max polygon bounding box.
-    """
-    north_max = poly_extrema[3]
-    north_min = poly_extrema[1]
-    east_min = poly_extrema[0]
-    east_max = poly_extrema[2]
-
-    north_mask = calc_coord_mask(north_min, data, unary=False, xoy="y", cond_val_two=north_max)
-    if north_mask.any():
-        data.drop(data[~north_mask].index, inplace=True)
-        east_mask = calc_coord_mask(east_min, data, unary=False, xoy="x", cond_val_two=east_max)
-        if east_mask.any():
-            data.drop(data[~east_mask].index, inplace=True)
-            return True, data
-        else:
-            return False, None
-    else:
-        return False, None
-
-
-def data_poly_import(filepath: str, data_columns: list, poly_extrema: list, chunks: int, conversion: dict):
-    result: pd.DataFrame = pd.DataFrame()
-    c = 0
-    while True:
-        imported_data = pd.read_csv(filepath, usecols=data_columns, engine='python', encoding_errors='replace',
-                                    on_bad_lines="skip", chunksize=chunks, sep=r'(,|;)', dtype=conversion)
-
-        for data in imported_data:
-            in_poly = ID_in_poly(poly_extrema, data)
-
-            if in_poly[0]:
-                result = result.append(in_poly[1])
-                c += 1
-                print(
-                    f'\n{c} chunks of {filepath} have been added to the dataframe so far. \nThe current df has a size of {result.shape}')
-
-            north_min_mask = calc_coord_mask(poly_extrema[1], data, xoy='y')
-            north_max_mask = calc_coord_mask(poly_extrema[3], data, xoy='y')
-
-            if all_smaller(north_min_mask):
-                print("None of imported data in range of Polygon.")
-                continue
-
-            if all_bigger(north_max_mask):
-                print("This part of the dataset is north of the given Polygon. Data import is stopped.")
-                break
-
-            else:
-                continue
-
-        break
-    return result
-
-
-def converter(df, col='Anzahl'):
-    return pd.to_numeric(df.loc[:, col], errors='coerce', downcast='integer')
 
 
 def import_vehicle_registration_by_excel(filepath: str):
