@@ -1,9 +1,10 @@
 # function written by Christian L.
+import numpy as np
 import pandas
 import pandas as pd
 from pandas import DataFrame
 import random as rnd
-
+import geopandas as gpd
 
 def calc_distro_sum(val_sum: int, splitter: float) -> tuple:
     """
@@ -168,12 +169,13 @@ def calc_cell_index(gemeinde_group, weight_map, index_columns, interest_area):
         gem_vals = attr_distro.merge(attr_ratio, on='Merkmal', how='inner').rename({0: 'Ratio'}, axis=1)
         gem_vals['Gemeinde Fill Values'] = gem_vals['Calc Distro Attr/Cell']*gem_vals['Ratio']
         gem_vals = mult_col_dict(gem_vals, weight_map, new_col='Attr Index', prdne='Gemeinde Fill Values', prdtwo='Auspraegung_Code', cond='Merkmal')
-
+        gem_vals.insert(8,"geometry", np.nan, True)
+        gem_vals = gpd.GeoDataFrame(gem_vals, geometry='geometry', crs='EPSG:3035')
         cell_gem_group = gem.groupby('Gitter_ID_100m')
 
         for id, cell in cell_gem_group:
             geo_point = cell['geometry'].dropna().values[0]
-            cell = cell.append(gem_vals)[index_columns].reset_index()
+            cell = cell.append(gem_vals)[index_columns].reset_index().set_crs(crs='EPSG:3035') # TODO: User Warning of CRS not being set
             mask = cell.duplicated(subset=['Merkmal', 'Auspraegung_Code'], keep='first')
             cell = rem_by_mask(cell, mask)
             index = cell['Attr Index'].sum()
@@ -206,7 +208,7 @@ def calc_gemeinde_index(gem_group):
     for name, gem in gem_group:
         gem_index = gem.sum(numeric_only=True)['Haushalte_Index']
         gem_idx.update({name: gem_index})
-    return pd.DataFrame.from_dict(gem_idx, columns=['Gemeinde', 'Index'], orient='index').reset_index()
+    return gem_idx
 
 
 def calc_sum_zba(gem_idx_dict):

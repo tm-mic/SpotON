@@ -6,7 +6,6 @@ from pyarrow import csv
 import pyarrow as pa
 from shapely.geometry import Point
 
->>>>>>> import_funcs.py
 
 def create_points_from_crs(df, crs='EPSG:3035', lat_col='x_mp_100m', lon_col='y_mp_100m'):
     """
