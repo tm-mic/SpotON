@@ -1,37 +1,33 @@
 {
   "Zensus": {
-    "filepath": "E:/Daten/Zensus/Zensus_Bevoelkerung_100m-Gitter.csv",
+    "filepath": "data/Zensus_Bevoelkerung_100m-Gitter.csv",
     "columns": ["Gitter_ID_100m", "x_mp_100m", "y_mp_100m"],
-    "cols_keep": ["Gitter_ID_100m", "Bundesland", "GEN", "geometry"]
+    "cols_keep": ["Gitter_ID_100m", "AOI", "GEN", "geometry"]
   },
 
   "Familie":
   {
-    "filepath":  "E:/Daten/Familien/Familie100m.csv",
-    "metadata": "E:/Daten/Familien/Datensatzbeschreibung_Gitter100m_Familien.xlsx"
+    "filepath":  "data/Familie100m.csv"
   },
 
   "Bevoelkerung":
   {
-    "filepath": "E:/Daten/Bevoelkerung/Bevoelkerung100M.csv",
-    "metadata": "E:/Daten/Bevoelkerung/Datensatzbeschreibung_Gitter100m_Bevoelkerung.xlsx"
+    "filepath": "data/Bevoelkerung100M.csv"
   },
 
   "Gebaeude":
   {
-    "filepath": "E:/Daten/Gebaeude/csv_Gebaeude_100m_Gitter/Geb100m.csv",
-    "metadata": "E:/Daten/Gebaeude/csv_Gebaeude_100m_Gitter/Datensatzbeschreibung_Gitter100m_GebWhg.xlsx"
+    "filepath": "data/Geb100m.csv"
   },
 
   "Haushalte":
   {
-    "filepath": "E:/Daten/Haushalte/csv_Haushalte_100m_Gitter/Haushalte100m.csv",
-    "metadata": "E:/Daten/Haushalte/csv_Haushalte_100m_Gitter/Datensatzbeschreibung_Gitter100m_Haushalte.xlsx"
+    "filepath": "data/Haushalte100m.csv"
   },
 
   "kfz_data":
   {
-    "filepath": "E:/Daten/fz1_2022.xlsx"
+    "filepath": "data/fz1_2022.xlsx"
   },
 
   "data":
@@ -66,24 +62,24 @@
 
   "ev_charging_points":
   {
-    "filepath": "E:/Daten/Ladesaeulenregister_CSV.csv",
+    "filepath": "data/Ladesaeulenregister_CSV.csv",
     "columns" : "Breitengrad,L?gengrad"
   },
 
   "shapefile":
   {
-    "Bundesland": "E:/Daten/vg2500_12-31.utm32s.shape/vg2500/VG2500_LAN.shp",
-    "Gemeinden": "E:/Daten/vg5000_01-01.utm32s.shape.ebenen/vg5000_01-01.utm32s.shape.ebenen/vg5000_ebenen_0101/VG5000_GEM.shp",
-    "Landkreis": "E:/Daten/vg5000_01-01.utm32s.shape.ebenen/vg5000_01-01.utm32s.shape.ebenen/vg5000_ebenen_0101/VG5000_KRS.shp",
-    "Zulassungsbezirk": "E:/Daten/kfz250/kfz250/KFZ250.shp"
+    "Bundesland": "data/VG2500_LAN.shp",
+    "Gemeinden": "data/VG5000_GEM.shp",
+    "Landkreis": "data/VG5000_KRS.shp",
+    "Zulassungsbezirk": "data/KFZ250.shp"
   },
   "results":
   {
-    "folder_to_write": "E:/Daten/results",
-    "data": "E:/Daten/results/data",
-    "cell_index": "E:/Daten/results/cell_index",
-    "point_ref": "E:/Daten/results/point_ref",
-    "gdf": "E:/Daten/results/gdf"
+    "folder_to_write": "data/results/",
+    "data": "data/results/data/",
+    "cell_index": "data/results/cell_index/",
+    "point_ref": "data/results/point_ref/",
+    "gdf": "data/results/gdf/"
   }
 }
 
