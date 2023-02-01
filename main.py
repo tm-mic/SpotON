@@ -21,7 +21,7 @@ from IandO.user_input import ui_aoi as ui
 
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
-config_obj = ju.read_json("/Users/msccomputinginthehumanities/PycharmProjects/SpotON/IandO/config.json")
+config_obj = ju.read_json("IandO/config.json")
 shp_config = config_obj.get('shapefile')
 point_ref_path = ju.read_json_elements(config_obj, 'results', 'point_ref')
 data_path = ju.read_json_elements(config_obj, 'results', 'data')
@@ -55,16 +55,43 @@ index_columns = ["Gitter_ID_100m", "Merkmal", "Auspraegung_Code", 'AOI', 'GEN', 
 
 
 def create_point_ref(zensus, cols, aoi, aoi_poly, gem_shp):
+    """
+    Creates a geodf as with geopoints, aoi and gem names for each cell.
+
+    :param zensus: Path to Census datafile with all cells.
+    :param cols: columns to read.
+    :param aoi: area of interest as specified by the user
+    :param aoi_poly: aoi polygon
+    :param gem_shp: gemeinde shapefile to match gemeinden to aoi
+    :return: Returns a geodataframe for the given aoi with all cells provided in census files the corresponding geopoints
+    and the corresponding gemeinde name.
+    """
+
     zensus = ifunc.read_df(zensus, cols)
     apr = ifunc.points_in_aoi(aoi, aoi_poly, zensus, gem_shp).loc[:, cols_keep]
     return apr.loc[apr['AOI'] == interest_area]
 
 
-def slice_df_cols(df, keep_cols):
+def slice_df_cols(df: pd.DataFrame, keep_cols: list):
+    """
+    Slices df by columns provided.
+
+    :param df: DF to slice.
+    :param keep_cols: Columns to keep.
+    :return: Returns a sliced df with keep_cols.
+    """
     return df.loc[:, keep_cols]
 
 
-def change_col_type(df, col, type):
+def change_col_type(df: pd.DataFrame, col: str, type: str):
+    """
+    Change the data type of dataframe column.
+
+    :param df: Dataframe to change type.
+    :param col: Column to change type.
+    :param type: type to change to.
+    :return: Returns a dataframe with the column changed to the new type.
+    """
     return df[col].astype(type)
 
 

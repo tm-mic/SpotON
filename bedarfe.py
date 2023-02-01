@@ -100,7 +100,7 @@ def rem_by_mask(df: pd.DataFrame, mask: pd.Series, val=True):
         return df.drop(df[~mask].index)
 
 
-def remap_groups(df, mapping):
+def remap_groups(df: pd.DataFrame, mapping: dict):
     """
     Based on a dict passed the Auspraegung Code of an Attr is changed.
 
@@ -119,7 +119,7 @@ def remap_groups(df, mapping):
     return df
 
 
-def calc_group_max(df, col_to_group='Gitter_ID_100m', col_to_max='Anzahl', cols=['Gitter_ID_100m', 'TotalObservations']):
+def calc_group_max(df: pd.DataFrame, col_to_group='Gitter_ID_100m', col_to_max='Anzahl', cols=['Gitter_ID_100m', 'TotalObservations']):
     """
     Groups based on given column and searches for max value in groups.
 
@@ -137,7 +137,7 @@ def calc_group_max(df, col_to_group='Gitter_ID_100m', col_to_max='Anzahl', cols=
     return pd.DataFrame(cell_max, columns=cols)
 
 
-def mult_col_dict(df, mapping, new_col, prdne, prdtwo, cond):
+def mult_col_dict(df: pd.DataFrame, mapping: dict, new_col: str, prdne, prdtwo, cond):
     """
     If condition in specified row[col] is met calcs the product of a cell value and a corresponding entry in a dictionary.
     # TODO: Error Handling KeyError - weights[x[prdtwo]] might throw a key error if passed x is not a key in dict.
@@ -174,14 +174,19 @@ def calc_cell_index(gemeinde_group, weight_map, index_columns, interest_area):
         cell_gem_group = gem.groupby('Gitter_ID_100m')
 
         for id, cell in cell_gem_group:
-            geo_point = cell['geometry'].dropna().values[0]
-            cell = cell.append(gem_vals)[index_columns].reset_index().set_crs(crs='EPSG:3035') # TODO: User Warning of CRS not being set
-            mask = cell.duplicated(subset=['Merkmal', 'Auspraegung_Code'], keep='first')
-            cell = rem_by_mask(cell, mask)
-            index = cell['Attr Index'].sum()
+            geo_point, index = sum_cell_index(cell, gem_vals, index_columns)
             index_list.append([id, interest_area, name, index, geo_point])
 
     return index_list
+
+
+def sum_cell_index(cell, gem_vals, cols):
+    geo_point = cell['geometry'].dropna().values[0]
+    cell = cell.append(gem_vals)[cols].reset_index().set_crs(crs='EPSG:3035') # TODO: User Warning of CRS not being set
+    mask = cell.duplicated(subset=['Merkmal', 'Auspraegung_Code'], keep='first')
+    cell = rem_by_mask(cell, mask)
+    index = cell['Attr Index'].sum()
+    return geo_point, index
 
 
 def normalize_column(series: pd.Series, new_max=1, new_min=0) -> float:

@@ -62,7 +62,6 @@ def reproject(gdf: gpd.GeoDataFrame, epsg='EPSG:3035'):
     return gdf.to_crs(crs=epsg)
 
 
-
 def points_in_aoi(interest_area, aoi_polygon, lat_lon_df, gem_shapefile):
     """
     Only return points in AOI.
@@ -152,15 +151,13 @@ def read_df(path: str, cols, sep=';'):
     read_options = csv.ReadOptions(autogenerate_column_names=False, use_threads=True)
     parse_options = csv.ParseOptions(delimiter=sep, invalid_row_handler=invalid_row_handler)
     convert = csv.ConvertOptions(include_columns=cols)
-    #TODO: optimization: value error when option string_to_bool and use_multithread is passed to_pandas()
+    # TODO: optimization: value error when option string_to_bool and use_multithread is passed to_pandas()
     try:
         return csv.read_csv(path, read_options, parse_options).to_pandas()
     except FileNotFoundError:
         print(f"The file {path} you are trying to read does not exist."
               f" Set the correct filepath in 'config.json'.")
         raise FileNotFoundError
-
-
 
 
 def write_pyarrow_to_csv(df, folderpath, filename, sep):
@@ -170,8 +167,8 @@ def write_pyarrow_to_csv(df, folderpath, filename, sep):
     return
 
 
-def concat_filepath(folderpath: str, aoi: str, ident='',  ending='.parquet'):
-    return folderpath+aoi+ident+ending
+def concat_filepath(folderpath: str, aoi: str, ident='', ending='.parquet'):
+    return folderpath + aoi + ident + ending
 
 
 def write_df_to_csv(df: pd.DataFrame, folderpath: str, aoi, sep=','):

@@ -9,11 +9,7 @@ def choose_aoi_shp(aoi_path_dict: dict):
     print(f"please choose one of the following aoi: {aoi_path_dict.keys()}")
     while True:
         try:
-            user_input = str(input(f"Which aoi is interesting for you?"
-                                   f"Please note: in this step it is most sensical to choose"
-                                   f"a Bundesland as the point reference will be created"
-                                   f"for the whole Bundesland and can be used for future runs"
-                                   f"comparing different areas of interest in the same bundesland."))
+            user_input = str(input(f"Which aoi is interesting for you?"))
             shp_selec = aoi_path_dict.get(user_input)
             if shp_selec is None:
                 print("The selection you have made is not valid.")

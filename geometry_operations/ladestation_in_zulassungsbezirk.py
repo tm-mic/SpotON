@@ -107,7 +107,7 @@ def cars_with_zulassungsbezirk_polygon_gdf(car_in_zula, base_polygon_gdf):
     """Merges two geodataframes. Result is a gdf with a NAME, an ARS, an Insgesamt_Pkw, a PIHybrid, an Elektro_BEV,
     an EVIng and a geometry column."""
     del car_in_zula['NAME']
-    del car_in_zula['geometry']
+    #del car_in_zula['geometry']
     car_and_zula = base_polygon_gdf.merge(car_in_zula, left_index=True, right_index=True)
     car_and_zula = car_and_zula.iloc[:, [0, 1, 3, 4, 5, 6, 2]]
     car_and_zula = car_and_zula.set_crs(crs='EPSG:3035')
