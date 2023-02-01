@@ -6,7 +6,7 @@
 
 import pandas as pd
 import geopandas as gpd
-import coord_to_polygon
+from geometry_operations import coord_to_polygon
 
 
 def create_car_in_zulassungsbezirk_from_csv(Path: str):
