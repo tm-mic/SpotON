@@ -310,13 +310,17 @@ def calc_num_ev_gem(ratios: dict, anzahl_evs_zb: int) -> dict:
 
 
 def calc_cars_in_interest_area(gemeinde_ladestationen_poly, index_df, interest_area: str):
+<<<<<<< HEAD
     gemeinde_ladestationen_poly['NAME_Zula'] = gemeinde_ladestationen_poly['NAME_Zula'].str.upper()
     gemeinde_ladestationen_poly['NAME_Zula'] = gemeinde_ladestationen_poly['NAME_Zula'].str.replace('Ü', 'UE')
     gemeinde_ladestationen_poly['NAME_Zula'] = gemeinde_ladestationen_poly['NAME_Zula'].str.replace('Ä', 'AE')
     gemeinde_ladestationen_poly['NAME_Zula'] = gemeinde_ladestationen_poly['NAME_Zula'].str.replace('Ö', 'OE')
+=======
+>>>>>>> 0d4b94f3c4187bce39e390e97a2177467d7ff14b
 
     interest_area_ladestationen_poly = gemeinde_ladestationen_poly.loc[
-        gemeinde_ladestationen_poly['NAME_Zula'] == interest_area]
+        gemeinde_ladestationen_poly['NAME_Gemeinde'] == interest_area]
+    # TODO: Implement flexible handly for all types of aoi (Bundesland, Landkreis, Zulassungsbezirk, Gemeinde)
 
     anzahl_evs_zb = interest_area_ladestationen_poly['EVIng'].iloc[0]
 
