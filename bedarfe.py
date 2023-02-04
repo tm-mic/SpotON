@@ -113,7 +113,6 @@ def remap_groups(df: pd.DataFrame, mapping: dict):
     """
     mapping_keys = list(mapping.keys())
     df = df.loc[df['Merkmal'].isin(mapping_keys)]
-    # TODO: Add Error Handling - keyError might occur when key is requested that does not exist.
     for key in mapping_keys:
         group_map = mapping.get(key)
         df['Auspraegung_Code'] = df.apply(
@@ -160,16 +159,25 @@ def mult_col_dict(df: pd.DataFrame, mapping: dict, new_col: str, prdne, prdtwo, 
 
 
 def calc_cell_index(gemeinde_group, weight_map, index_columns, interest_area):
+    """
+    Calculates index for each cell in a gemeinde group. Infered gemeinde values are added to the cell index value.
+
+    :param gemeinde_group: df grouped by gemeinde
+    :param weight_map: map of attribute weights passed from the config.json
+    :param index_columns: columns to include in the result
+    :param interest_area: area of interest is added as column to the result list
+    :return: list of lists containinig cell indices
+    """
     # TODO: seperate gemeinde fill and index calc in calc cell index func
     # TODO: extract functions
     index_list = []
     for name, gem in gemeinde_group:
         codes_count = get_code_counts(gem)
         sum_codes = group_and_sum_code_counts(gem)
-        attr_distro = inner_merge_df(sum_codes, codes_count)
-        attr_distro['Calc Distro Attr/Cell'] = calc_attr_distro_cell(attr_distro)
+        attr_median = inner_merge_df(sum_codes, codes_count)
+        attr_median['Calc Distro Attr/Cell'] = calc_attr_median(attr_median)
         attr_ratio = count_attr_in_gem(gem)
-        gem_vals = infer_gem_vals(attr_distro, attr_ratio, weight_map)
+        gem_vals = infer_gem_vals(attr_median, attr_ratio, weight_map)
         cell_gem_group = gem.groupby('Gitter_ID_100m')
         for id, cell in cell_gem_group:
             geo_point, index = sum_cell_index(cell, gem_vals, index_columns)
@@ -179,20 +187,48 @@ def calc_cell_index(gemeinde_group, weight_map, index_columns, interest_area):
 
 def count_attr_in_gem(gem):
     """
-    Counts the number of occurences of a attr subset in a gemeinde group object.
+    Counts the number of occurences of an attribute in a gemeinde group object. Shows the share of an attribute
+    to the total number of attributes in a group.
 
     :param gem: Group Object.
-    :return: Returns a df of counts for each attribute. Index is reset.
+    :return: Returns a df with a share for each attribute in the gemeinde. Index is reset.
     """
     return gem.value_counts(subset=['Merkmal'], normalize=True).reset_index()
 
+
 def sum_cell_index(cell, gem_vals, cols):
-    geo_point = cell['geometry'].dropna().values[0]
-    cell = cell.append(gem_vals)[cols].reset_index().set_crs(crs='EPSG:3035')  # TODO: User Warning of CRS not being set
-    mask = cell.duplicated(subset=['Merkmal', 'Auspraegung_Code'], keep='first')
-    cell = rem_by_mask(cell, mask)
+    cell, geo_point = purge_duplicates(cell, gem_vals, cols)
     index = cell['Attr Index'].sum()
     return geo_point, index
+
+
+def purge_duplicates(cell, gem_vals, cols):
+    """
+    Purge duplicate entries identified by ['Merkmal', 'Auspraegung_Code'] from cell group.
+    Duplicates occur because of gemeinde fill values being added as additional values to calculate cell index.
+
+    :param cell: group of cell values
+    :param gem_vals: gemeinde fill values
+    :param cols: Columns to append the gemeinde fill values by
+    :return: cell group purged of logically duplicate values; geo_point used to fill the missing geometries left by the merge of the gemeinde fill values
+    """
+
+    geo_point = grab_any_valid_value(cell, 'geometry')
+    cell = cell.append(gem_vals)[cols].reset_index().set_crs(crs='EPSG:3035')
+    mask = cell.duplicated(subset=['Merkmal', 'Auspraegung_Code'], keep='first')
+    cell = rem_by_mask(cell, mask)
+    return cell, geo_point
+
+
+def grab_any_valid_value(df, col):
+    """
+    Grabs a valid (non nan) value of a column in a passed df.
+
+    :param df: Dataframe
+    :param col: Column to grab value from
+    :return: Value of unspecified dtype.
+    """
+    return df[col].dropna().values[0]
 
 
 def inner_merge_df(sum_codes, codes_count, on=['Merkmal', 'Auspraegung_Code']):
@@ -201,8 +237,8 @@ def inner_merge_df(sum_codes, codes_count, on=['Merkmal', 'Auspraegung_Code']):
 
 def get_code_counts(gem):
     """
-    Counts values in the subset of [attributes and attribute codes].
-    "How many obersvations are in the Gemeinde?"
+    Counts occurrences of attribute - attribute code combinations.
+    "How many observations are in the Gemeinde?"
 
     :param gem: Group object.
     :return: A group object / df with counts per [attributes and attribute code]. Index is reset.
@@ -210,18 +246,27 @@ def get_code_counts(gem):
     return gem.value_counts(subset=['Merkmal', 'Auspraegung_Code']).reset_index().rename({0: "Counts"}, axis=1)
 
 
-def calc_attr_distro_cell(attr_distro):
+def calc_attr_median(attr_distro):
     """
-
-
-    :param attr_distro:
-    :return:
+    :param attr_distro: df containing sum of number of occurences and count of attribute - attribute code combinations
+    :return: Df with Df[Calc Distro Attr/Cell] containing the median value for each attribute - attribute code combination in a group.
     """
     return attr_distro['Anzahl'].div(attr_distro['Counts'])
 
 
-def infer_gem_vals(attr_distro, attr_ratio, weight_map):
-    gem_vals = attr_distro.merge(attr_ratio, on='Merkmal', how='inner').rename({0: 'Ratio'}, axis=1)
+def infer_gem_vals(attr_median, attr_ratio, weight_map):
+    """
+    Calculates a gemeinde fill value based on the median value for each attribute-attribute code combination and
+    the absolute share of attribute occurence in the Gemeinde.
+    Gemeinde fille values are weighted by the weight_map provided.
+
+
+    :param attr_median: Median value for each attribute-attribute-code combination in a gemeinde
+    :param attr_ratio: Share of attribute value in gemeinde occurences.
+    :param weight_map: weight mapping as specified in config.json
+    :return: Df indicating a weighted Gemeinde Fill interpreted as Attribute Index for the Gemeinde passed.
+    """
+    gem_vals = attr_median.merge(attr_ratio, on='Merkmal', how='inner').rename({0: 'Ratio'}, axis=1)
     gem_vals['Gemeinde Fill Values'] = gem_vals['Calc Distro Attr/Cell'] * gem_vals['Ratio']
     gem_vals = mult_col_dict(gem_vals, weight_map, new_col='Attr Index', prdne='Gemeinde Fill Values',
                              prdtwo='Auspraegung_Code', cond='Merkmal')
@@ -231,8 +276,7 @@ def infer_gem_vals(attr_distro, attr_ratio, weight_map):
 
 def group_and_sum_code_counts(gem, cols=['Merkmal', 'Auspraegung_Code'], col_count='Anzahl'):
     """
-    Counts the number of occurences in col_count in a grouped df by cols.
-    "How often does a Code of a specific Attribute occur in the gemeinde"
+    Sums the number of occurrences of every attribute - attribute code combination.
 
     :param gem: Group Object / Df
     :return: Group Object / Df with sums of groups.
@@ -280,7 +324,7 @@ def calc_sum_zba(gem_idx_dict):
 
 def calc_gem_ratio(gemeinde_idx_dict, sum_zba):
     """
-    Calculates the ratio of gemeinde index and the sum of all gemeinde indeces in the zba.
+    Calculates the ratio of gemeinde index and the sum of all gemeinde indices in the zba.
 
     :param gemeinde_idx_dict:
     :param sum_zba:
@@ -310,13 +354,10 @@ def calc_num_ev_gem(ratios: dict, anzahl_evs_zb: int) -> dict:
 
 
 def calc_cars_in_interest_area(gemeinde_ladestationen_poly, index_df, interest_area: str):
-<<<<<<< HEAD
     gemeinde_ladestationen_poly['NAME_Zula'] = gemeinde_ladestationen_poly['NAME_Zula'].str.upper()
     gemeinde_ladestationen_poly['NAME_Zula'] = gemeinde_ladestationen_poly['NAME_Zula'].str.replace('Ü', 'UE')
     gemeinde_ladestationen_poly['NAME_Zula'] = gemeinde_ladestationen_poly['NAME_Zula'].str.replace('Ä', 'AE')
     gemeinde_ladestationen_poly['NAME_Zula'] = gemeinde_ladestationen_poly['NAME_Zula'].str.replace('Ö', 'OE')
-=======
->>>>>>> 0d4b94f3c4187bce39e390e97a2177467d7ff14b
 
     interest_area_ladestationen_poly = gemeinde_ladestationen_poly.loc[
         gemeinde_ladestationen_poly['NAME_Gemeinde'] == interest_area]
