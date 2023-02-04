@@ -109,6 +109,16 @@ def calc_attr_max_ratios(df):
 
 
 def calc_cell_index(df, weight, index_col, aoi):
+    """
+    Calculates the cell indices based on a Gemeinde grouping.
+
+    :param df: Data df
+    :param weight: weight Mapping for attribute codes
+    :param index_col: columns to keep in the index result
+    :param aoi: area of interest
+    :return: Returns a df containing the calculated cell Indices.
+    """
+
     gemeinden = df.groupby('GEN')
     index_list = bed.calc_cell_index(gemeinden, weight, index_col, aoi)
     return gpd.GeoDataFrame(
@@ -117,24 +127,50 @@ def calc_cell_index(df, weight, index_col, aoi):
 
 
 def gem_index(df, haus_df):
+    """
+    Calculates the gemeinde indices based on normalized (0-1) cell indices and the number of households in a cell.
+
+    :param df: df containing the cell indices
+    :param haus_df: df containing the number of households
+    :return:
+    """
+
     df = df.merge(haus_df, on='Gitter_ID_100m', how='left').dropna(how='any')
     df = slice_df_cols(df, ['Gitter_ID_100m', 'AOI', 'Gemeinde', 'Cell Index', 'Anzahl', 'geometry'])
     df['Cell Index'] = bed.normalize_column(df['Cell Index'])
     df = bed.add_haushalte_index(df)
     zula_ratio = bed.calc_zula_ratio(df)
-    return bed.normalize_column(bed.add_gemeinde_index(df, zula_ratio)) #TODO: projektbericht normalisierung in den Zwischenschritten prüfen
+    g_index = bed.add_gemeinde_index(df, zula_ratio)
+    g_index['Gemeinde_Index'] = bed.normalize_column(g_index['Gemeinde_Index'])
+    return g_index
 
 
-def read_demo_data_to_parquet(file, delim=';',
-                              cols=['Gitter_ID_100m', 'Gitter_ID_100m_neu', 'Merkmal', 'Auspraegung_Code',
+def read_data_from_parquet(file, delim=';',
+                           cols=['Gitter_ID_100m', 'Gitter_ID_100m_neu', 'Merkmal', 'Auspraegung_Code',
                                     'Auspraegung_Text', 'Anzahl', 'Anzahl_q']):
     read_opt = csv.ReadOptions(use_threads=True, column_names=cols)
     parse_options = csv.ParseOptions(delimiter=delim, invalid_row_handler=ifunc.invalid_row_handler)
     convert = csv.ConvertOptions(include_columns=data_columns)
-    return csv.read_csv(file, read_opt, parse_options, convert)
+    try:
+        csv_file = csv.read_csv(file, read_opt, parse_options, convert)
+        return csv_file
+    except FileNotFoundError:
+        i = 0
+        while i < 5:
+            print(f"The .parquet file {file} you are trying to read could not be found. Please check your data folder for {file}."
+                  f"After adding the data file restart the program.")
+            raise FileNotFoundError
 
 
 def disaggr_age_df(df, distro_val=[0.4, 0.6]):
+    """
+    Disaggregates alter_kurz into alter_10jg attributes groups based on a low and high distro val.
+
+    :param df: df containing age groups
+    :param distro_val: range controlling the random value used to distribute age_kurz into age_10_jg groups. 0.5, 0.5 will yield a
+    50/50 distribution where possible.
+    :return: Dataframe containing the disaggregated age groups. Existing alter_10_jg age groups are retained.
+    """
     age_disaggr = bed.disaggregate_age_attr(df, dis_low=distro_val[0], dis_high=distro_val[1])
     df.append(age_disaggr)
     age_mask = df.duplicated(subset=['Gitter_ID_100m', 'Merkmal', 'Auspraegung_Code'], keep='first')
@@ -181,14 +217,14 @@ else:
 
 # if all data does not exist yet write back as parquet
 if fe.path_exists(ifunc.concat_filepath(data_path, 'all_data')) is False:
-    bev = read_demo_data_to_parquet(bev_data, delim=';')
-    fam = read_demo_data_to_parquet(fam_data, delim=',')
-    geb = read_demo_data_to_parquet(geb_data, delim=',')
+    bev = read_data_from_parquet(bev_data, delim=';')
+    fam = read_data_from_parquet(fam_data, delim=',')
+    geb = read_data_from_parquet(geb_data, delim=',')
     data = pa.concat_tables([bev, fam, geb])
     pa.parquet.write_table(data, ifunc.concat_filepath(data_path, 'all_data', ending='.parquet'))
 
     # Haushalte data is read and written seperatly as it is merged to the dataframe at a later point in time.
-    hau = read_demo_data_to_parquet(hau_data, delim=',')
+    hau = read_data_from_parquet(hau_data, delim=',')
     pa.parquet.write_table(hau, ifunc.concat_filepath(data_path, 'all_data', ident='_haushalte', ending='.parquet'))
     print(f"The point reference data has been written to {data_path}.")
 else:
@@ -236,14 +272,14 @@ if fe.path_exists(ifunc.concat_filepath(index_path, interest_area)) is False:
     # calc ratio based on haushalte and normalize
     hau_df = pd.read_parquet(ifunc.concat_filepath(data_path, 'all_data', ident='_haushalte', ending='.parquet'))
     index_df = gem_index(index_df, hau_df)
-    print("The index has calculated and normalized.")
+    print("The Gemeinde-index has been calculated and normalized.")
 
     index_df.to_parquet(ifunc.concat_filepath(index_path, interest_area))
 else:
     index_df = gpd.read_parquet(ifunc.concat_filepath(index_path, interest_area))
 
 print(index_df.head())
-index_df.plot(column="Cell Index")
+index_df.plot(column='Haushalte_Index')
 plt.show()
 
 print(
