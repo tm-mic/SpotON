@@ -96,6 +96,12 @@ def change_col_type(df: pd.DataFrame, col: str, type: str):
 
 
 def calc_attr_max_ratios(df):
+    """
+    Calculates the ratio of attribute count and total number of observations in a cell.
+
+    :param df: Dataframe containing the attribute count and number of total observations.
+    :return: Dataframe with ratio each attribute in each cell
+    """
     attr_max_cell = bed.calc_group_max(df)
     df = df.merge(attr_max_cell, on="Gitter_ID_100m", how='inner')
     return df[['Anzahl']].div(df['TotalObservations'], axis=0)
@@ -109,13 +115,13 @@ def calc_cell_index(df, weight, index_col, aoi):
         geometry='geometry')
 
 
-def haushalte_index(df, haus_df):
+def gem_index(df, haus_df):
     df = df.merge(haus_df, on='Gitter_ID_100m', how='left').dropna(how='any')
     df = slice_df_cols(df, ['Gitter_ID_100m', 'AOI', 'Gemeinde', 'Cell Index', 'Anzahl', 'geometry'])
     df['Cell Index'] = bed.normalize_column(df['Cell Index'])
     df = bed.add_haushalte_index(df)
     zula_ratio = bed.calc_zula_ratio(df)
-    return bed.add_gemeinde_index(df, zula_ratio)
+    return bed.normalize_column(bed.add_gemeinde_index(df, zula_ratio)) #TODO: projektbericht normalisierung in den Zwischenschritten prüfen
 
 
 def read_demo_data_to_parquet(file, delim=';',
@@ -228,7 +234,7 @@ if fe.path_exists(ifunc.concat_filepath(index_path, interest_area)) is False:
 
     # calc ratio based on haushalte and normalize
     hau_df = pd.read_parquet(ifunc.concat_filepath(data_path, 'all_data', ident='_haushalte', ending='.parquet'))
-    index_df = haushalte_index(index_df, hau_df)
+    index_df = gem_index(index_df, hau_df)
     print("The index has calculated and normalized.")
 
     index_df.to_parquet(ifunc.concat_filepath(index_path, interest_area))

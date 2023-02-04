@@ -6,6 +6,7 @@ from pandas import DataFrame
 import random as rnd
 import geopandas as gpd
 
+
 def calc_distro_sum(val_sum: int, splitter: float) -> tuple:
     """
     Calcs two values with val1 + val2 = 1, if given splitter ranges from 0-1.
@@ -112,14 +113,16 @@ def remap_groups(df: pd.DataFrame, mapping: dict):
     """
     mapping_keys = list(mapping.keys())
     df = df.loc[df['Merkmal'].isin(mapping_keys)]
-    #TODO: Add Error Handling - keyError might occur when key is requested that does not exist.
+    # TODO: Add Error Handling - keyError might occur when key is requested that does not exist.
     for key in mapping_keys:
         group_map = mapping.get(key)
-        df['Auspraegung_Code'] = df.apply(lambda x: group_map[x['Auspraegung_Code']] if x['Merkmal'] == key else x['Auspraegung_Code'], axis=1)
+        df['Auspraegung_Code'] = df.apply(
+            lambda x: group_map[x['Auspraegung_Code']] if x['Merkmal'] == key else x['Auspraegung_Code'], axis=1)
     return df
 
 
-def calc_group_max(df: pd.DataFrame, col_to_group='Gitter_ID_100m', col_to_max='Anzahl', cols=['Gitter_ID_100m', 'TotalObservations']):
+def calc_group_max(df: pd.DataFrame, col_to_group='Gitter_ID_100m', col_to_max='Anzahl',
+                   cols=['Gitter_ID_100m', 'TotalObservations']):
     """
     Groups based on given column and searches for max value in groups.
 
@@ -152,46 +155,95 @@ def mult_col_dict(df: pd.DataFrame, mapping: dict, new_col: str, prdne, prdtwo, 
 
     for key in mapping:
         weights = mapping.get(key)
-        df[new_col] = df.apply(lambda x: (x[prdne]*weights[x[prdtwo]]) if x[cond] == key else 0, axis=1)
+        df[new_col] = df.apply(lambda x: (x[prdne] * weights[x[prdtwo]]) if x[cond] == key else 0, axis=1)
     return df
 
 
 def calc_cell_index(gemeinde_group, weight_map, index_columns, interest_area):
-# TODO: seperate gemeinde fill and index calc in calc cell index func
+    # TODO: seperate gemeinde fill and index calc in calc cell index func
     # TODO: extract functions
     index_list = []
     for name, gem in gemeinde_group:
-        codes_counts = gem.value_counts(subset=['Merkmal', 'Auspraegung_Code']).reset_index().rename({0: "Counts"}, axis=1)
-        sum_codes = gem.groupby(['Merkmal', 'Auspraegung_Code'])['Anzahl'].sum().reset_index()
-        attr_distro = sum_codes.merge(codes_counts, on=['Merkmal', 'Auspraegung_Code'], how='inner')
-        attr_distro['Calc Distro Attr/Cell'] = attr_distro['Anzahl'].div(attr_distro['Counts'])
-        attr_ratio = gem.value_counts(subset=['Merkmal'], normalize=True).reset_index()
-        gem_vals = attr_distro.merge(attr_ratio, on='Merkmal', how='inner').rename({0: 'Ratio'}, axis=1)
-        gem_vals['Gemeinde Fill Values'] = gem_vals['Calc Distro Attr/Cell']*gem_vals['Ratio']
-        gem_vals = mult_col_dict(gem_vals, weight_map, new_col='Attr Index', prdne='Gemeinde Fill Values', prdtwo='Auspraegung_Code', cond='Merkmal')
-        gem_vals.insert(8,"geometry", np.nan, True)
-        gem_vals = gpd.GeoDataFrame(gem_vals, geometry='geometry', crs='EPSG:3035')
+        codes_count = get_code_counts(gem)
+        sum_codes = group_and_sum_code_counts(gem)
+        attr_distro = inner_merge_df(sum_codes, codes_count)
+        attr_distro['Calc Distro Attr/Cell'] = calc_attr_distro_cell(attr_distro)
+        attr_ratio = count_attr_in_gem(gem)
+        gem_vals = infer_gem_vals(attr_distro, attr_ratio, weight_map)
         cell_gem_group = gem.groupby('Gitter_ID_100m')
-
         for id, cell in cell_gem_group:
             geo_point, index = sum_cell_index(cell, gem_vals, index_columns)
             index_list.append([id, interest_area, name, index, geo_point])
-
     return index_list
 
 
+def count_attr_in_gem(gem):
+    """
+    Counts the number of occurences of a attr subset in a gemeinde group object.
+
+    :param gem: Group Object.
+    :return: Returns a df of counts for each attribute. Index is reset.
+    """
+    return gem.value_counts(subset=['Merkmal'], normalize=True).reset_index()
+
 def sum_cell_index(cell, gem_vals, cols):
     geo_point = cell['geometry'].dropna().values[0]
-    cell = cell.append(gem_vals)[cols].reset_index().set_crs(crs='EPSG:3035') # TODO: User Warning of CRS not being set
+    cell = cell.append(gem_vals)[cols].reset_index().set_crs(crs='EPSG:3035')  # TODO: User Warning of CRS not being set
     mask = cell.duplicated(subset=['Merkmal', 'Auspraegung_Code'], keep='first')
     cell = rem_by_mask(cell, mask)
     index = cell['Attr Index'].sum()
     return geo_point, index
 
 
+def inner_merge_df(sum_codes, codes_count, on=['Merkmal', 'Auspraegung_Code']):
+    return sum_codes.merge(codes_count, on=on, how='inner')
+
+
+def get_code_counts(gem):
+    """
+    Counts values in the subset of [attributes and attribute codes].
+    "How many obersvations are in the Gemeinde?"
+
+    :param gem: Group object.
+    :return: A group object / df with counts per [attributes and attribute code]. Index is reset.
+    """
+    return gem.value_counts(subset=['Merkmal', 'Auspraegung_Code']).reset_index().rename({0: "Counts"}, axis=1)
+
+
+def calc_attr_distro_cell(attr_distro):
+    """
+
+
+    :param attr_distro:
+    :return:
+    """
+    return attr_distro['Anzahl'].div(attr_distro['Counts'])
+
+
+def infer_gem_vals(attr_distro, attr_ratio, weight_map):
+    gem_vals = attr_distro.merge(attr_ratio, on='Merkmal', how='inner').rename({0: 'Ratio'}, axis=1)
+    gem_vals['Gemeinde Fill Values'] = gem_vals['Calc Distro Attr/Cell'] * gem_vals['Ratio']
+    gem_vals = mult_col_dict(gem_vals, weight_map, new_col='Attr Index', prdne='Gemeinde Fill Values',
+                             prdtwo='Auspraegung_Code', cond='Merkmal')
+    gem_vals.insert(8, "geometry", np.nan, True)
+    return gpd.GeoDataFrame(gem_vals, geometry='geometry', crs='EPSG:3035')
+
+
+def group_and_sum_code_counts(gem, cols=['Merkmal', 'Auspraegung_Code'], col_count='Anzahl'):
+    """
+    Counts the number of occurences in col_count in a grouped df by cols.
+    "How often does a Code of a specific Attribute occur in the gemeinde"
+
+    :param gem: Group Object / Df
+    :return: Group Object / Df with sums of groups.
+    """
+    return gem.groupby(cols)[col_count].sum().reset_index()
+
+
 def normalize_column(series: pd.Series, new_max=1, new_min=0) -> float:
     """
     Casts series data points between 0-1 based on min and max values in series.
+
     :param: date_to_norm: int or float value to normalize.
     :param: abs_min: Min val. in scope.
     :param: abs_max: Max val. in scope.
@@ -238,8 +290,8 @@ def calc_gem_ratio(gemeinde_idx_dict, sum_zba):
     ratio_dict = {}
     for key in idx_keys:
         gem_idx = gemeinde_idx_dict.get(key)
-        ratio = gem_idx/sum_zba
-        ratio_dict.update({key:ratio})
+        ratio = gem_idx / sum_zba
+        ratio_dict.update({key: ratio})
     return ratio_dict
 
 
@@ -251,14 +303,13 @@ def calc_num_ev_gem(ratios: dict, anzahl_evs_zb: int) -> dict:
     :param anzahl_evs_zb:
     :return: Dict with number of cars in a gemeinde.
     """
-    ev_dict= {}
+    ev_dict = {}
     for key in ratios.keys():
-        ev_dict.update({key: ratios.get(key)*anzahl_evs_zb})
+        ev_dict.update({key: ratios.get(key) * anzahl_evs_zb})
     return ev_dict
 
 
 def calc_cars_in_interest_area(gemeinde_ladestationen_poly, index_df, interest_area: str):
-
     gemeinde_ladestationen_poly['NAME_Zula'] = gemeinde_ladestationen_poly['NAME_Zula'].str.upper()
     gemeinde_ladestationen_poly['NAME_Zula'] = gemeinde_ladestationen_poly['NAME_Zula'].str.replace('Ü', 'UE')
     gemeinde_ladestationen_poly['NAME_Zula'] = gemeinde_ladestationen_poly['NAME_Zula'].str.replace('Ä', 'AE')
@@ -293,6 +344,7 @@ def add_haushalte_index(index_df):
                     (index_df['Anzahl'].astype('float64') * index_df['Cell Index'].astype('float64')))
 
     return index_df
+
 
 def calc_zula_ratio(index_df):
     gem_group = index_df.groupby(by='Gemeinde')
