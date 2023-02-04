@@ -110,13 +110,13 @@ def calc_attr_max_ratios(df):
 
 def calc_cell_index(df, weight, index_col, aoi):
     """
-    Calculates the cell indices based on a Gemeinde grouping.
+    Groups Gemeinden and creates geodataframe from index list containing cell indices.
 
     :param df: Data df
     :param weight: weight Mapping for attribute codes
     :param index_col: columns to keep in the index result
     :param aoi: area of interest
-    :return: Returns a df containing the calculated cell Indices.
+    :return: Returns a geodataframe containing the calculated cell Indices.
     """
 
     gemeinden = df.groupby('GEN')
@@ -277,10 +277,6 @@ if fe.path_exists(ifunc.concat_filepath(index_path, interest_area)) is False:
     index_df.to_parquet(ifunc.concat_filepath(index_path, interest_area))
 else:
     index_df = gpd.read_parquet(ifunc.concat_filepath(index_path, interest_area))
-
-print(index_df.head())
-index_df.plot(column='Haushalte_Index')
-plt.show()
 
 print(
     "The Cell indeces have been calculated. Next the amount of cars for each Gemeinde based on the cell indeces will be calculated.")
