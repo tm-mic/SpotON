@@ -21,6 +21,13 @@ def create_points_from_crs(df, crs='EPSG:3035', lat_col='x_mp_100m', lon_col='y_
 
 
 def read_shp(shp_path, cols):
+    """
+    Reads shp files in UTF-8 encoding. Returns geodataframe containing the cols provided.
+
+    :param shp_path:
+    :param cols:
+    :return:
+    """
     return gpd.read_file(shp_path, encoding='utf-8')[cols]
 
 
@@ -146,7 +153,7 @@ def import_charging_pole_register(filepath: str):
     return df
 
 
-def read_df(path: str, cols, sep=';'):
+def read_df(path: str, cols, sep=';'): #TODO: basically same as read data from parquet. Union.
     sep = sep
     read_options = csv.ReadOptions(autogenerate_column_names=False, use_threads=True)
     parse_options = csv.ParseOptions(delimiter=sep, invalid_row_handler=invalid_row_handler)
@@ -163,7 +170,11 @@ def read_df(path: str, cols, sep=';'):
 def write_pyarrow_to_csv(df, folderpath, filename, sep):
     write_options = csv.WriteOptions(delimiter=sep)
     df = pa.Table.from_pandas(df=df)
-    csv.write_csv(df, concat_filepath(folderpath, filename), write_options)
+    try:
+        csv.write_csv(df, concat_filepath(folderpath, filename), write_options)
+    except FileNotFoundError:
+        print('No folder exists at the location specified. No file has been written.')
+        pass
     return
 
 
@@ -171,14 +182,9 @@ def concat_filepath(folderpath: str, aoi: str, ident='', ending='.parquet'):
     return folderpath + aoi + ident + ending
 
 
-def write_df_to_csv(df: pd.DataFrame, folderpath: str, aoi, sep=','):
-    df.to_csv(concat_filepath(folderpath, aoi), sep, index=False)
-    return
-
-
 def invalid_row_handler(row):
     """
-    Callable called by pyarrow import function
+    Called by pyarrow import function
     skipping invalid rows in pyarrow table.
 
     :return: str "skip "
