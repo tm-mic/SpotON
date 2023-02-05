@@ -8,6 +8,7 @@ def read_json(file_path='config.json') -> object:
     """
     Casts json file from file to python object.
     Note: Object_hook is necessary due to json format. Casts digit str to int.
+
     :param: file_path: Path to json file.
     :return: Python object. Most likely a dict.
     """
@@ -19,17 +20,6 @@ def read_json(file_path='config.json') -> object:
         print(f"The file {file_path} you are trying to read does not exists at the path given."
               f"Please provide a different path to an existing config file.")
         return 0
-
-
-def write_dict_to_json(dictionary: dict, filepath: str, append=False):
-    """Writes dict type to json file. If file does not exist new files is created."""
-    if append == 'a':
-        write = 'a'
-    else:
-        write = 'w'
-    with open(filepath, write) as outfile:
-        json.dump(dictionary, outfile)
-    return None
 
 
 def read_json_elements(json_obj, file_ident, attr=None):

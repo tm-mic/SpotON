@@ -6,6 +6,13 @@ from IandO import json_utility as ju
 # TODO: add redo possibility through listener
 
 def choose_aoi_shp(aoi_path_dict: dict):
+    """
+    Requests user selection from dict of shapefile paths.
+
+    :param aoi_path_dict: Dictionary of file paths.
+    :return: Dict key entry representing a file path.
+    """
+
     print(f"please choose one of the following aoi: {aoi_path_dict.keys()}")
     while True:
         try:
@@ -18,11 +25,17 @@ def choose_aoi_shp(aoi_path_dict: dict):
                 return shp_selec
         except:
             print(
-                "Please enter a String representing a valid Area of Interest (AOI). The valid area of interests are depicted in the list.")
+                "Please enter a String representing a valid Area of Interest (AOI). The valid area of interests are depicted in the list above.")
             continue
 
 
 def select_aoi(aoi_shp_path):
+    """
+    From shapefile select an entry from the "GEN" column.
+
+    :param aoi_shp_path: Shapefile path.
+    :return: Name of selected aoi. Geometry of selected aoi.
+    """
     aoi_list = read_shp(aoi_shp_path, "GEN").unique()
     print(aoi_list)
     while True:
@@ -43,6 +56,13 @@ def select_aoi(aoi_shp_path):
 
 
 def ui_aoi(shp_dict):
+    """
+    Combines choose_aoi_shp and selct_aoi to form ui dialogue.
+
+    :param shp_dict: Dictionary containing shapefiles as specified in config.json.
+    :return: Name of selected aoi. Geometry of selected aoi.
+    """
+
     user_aoi_path = choose_aoi_shp(shp_dict)
     user_selec = select_aoi(user_aoi_path)
     return user_selec[0], user_selec[1]
