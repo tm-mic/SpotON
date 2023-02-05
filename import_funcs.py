@@ -85,20 +85,6 @@ def points_in_aoi(interest_area, aoi_polygon, lat_lon_df, gem_shapefile):
     return point_gdf.sjoin(aoi_gemeinden, how='left', predicate='covered_by').dropna(subset='GEN')
 
 
-def id_to_lat_lon(id: str):
-    """
-    Slices string in two positions.
-    Necessary to return Grid coord from ID as specified in DE_GRID ETRS89 UTM32 100m
-
-    :param id:
-    :return:
-    """
-
-    north = int(id[5:10] + '00')
-    east = int(id[11:15] + '000')
-    return north, east
-
-
 def import_vehicle_registration_by_excel(filepath: str):
     """
     :param filepath: Path to .xlsx of vehicle registration by district
