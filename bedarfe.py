@@ -7,41 +7,38 @@ import random as rnd
 import geopandas as gpd
 
 
-def calc_distro_sum(val_sum: int, splitter: float) -> tuple:
+def split_val_by_share(val_in: int, share: float) -> tuple:
     """
-    Calcs two values with val1 + val2 = 1, if given splitter ranges from 0-1.
+    Calcs two values from one with val1 + val2 = 1, if given share value rangeing from 0-1.
 
-    :param val_sum: Original value to be splitted.
-    :param splitter: Variable to split val. by.
+    :param val_in: Original value to be distributed.
+    :param share: Variable to split val. by.
     :return: Tuple of two floats, summing to approx 1.
     :exception Throws Attribute Error if splitter not between 0-1.
     """
-    if splitter > 1 or splitter < 0:
+    if share > 1 or share < 0:
         print("The splitter value you have passed in the age disaggregation is not valid.\n"
               "The value has to range between 0-1 to return sensical results for the index calc."
-              f"Splitter value given {splitter}\n"
+              f"Splitter value given {share}\n"
               f"Splitter value required float: 0-1")
         raise AttributeError
 
-    group_one = int(val_sum) * splitter
-    group_two = int(val_sum) - group_one
-    return group_one, group_two
+    val_one = int(val_in) * share
+    val_two = int(val_in) - val_one
+    return val_one, val_two
 
 
-def value_distro(orig_group: int, distro_val: tuple, row: tuple, new_attr: str, group_mapping=None) -> list:
+def reallocate_vals(orig_group: int, distro_val: tuple, row: tuple, new_attr: str,
+                    group_mapping={1: [1, 2], 2: [3, -1], 3: [4, 5], 4: [6, 7], 5: [8, 9]}) -> list:
     """
-    Distributes values given in pairs into one or two groups based on mapping provided.
+    Allocates values given in pairs into one or two groups based on mapping provided.
 
     :param orig_group: Group to be split.
     :param distro_val: Original group values as distribution tuple to be split.
     :param row: Dataframe row passed containing original data.
     :param new_attr: Attribute Name to be inserted for calc values to be identified later.
-    :return: List of max. two elements, with disaggregated dataframe row values
+    :return: List of two elements, with disaggregated dataframe row values
     """
-
-    if group_mapping is None:
-        group_mapping = {1: [1, 2], 2: [3, -1], 3: [4, 5], 4: [6, 7], 5: [8, 9]}
-
     keys = group_mapping.get(int(orig_group))
     res_list = []
 
@@ -61,7 +58,7 @@ def disaggregate_age_attr(
         attr_ident='ALTER_10JG'
 ) -> DataFrame:
     """
-    Runs through dataframe and disaggregates attr val data into provided groups by given splitter value.
+    Runs through dataframe and disaggregates attribute age data into provided groups by given splitter value.
 
     :param df: raw data to pass.
     :param dis_low: lower bound of rnd value
@@ -73,22 +70,23 @@ def disaggregate_age_attr(
     alter_kurz = df.loc[df['Merkmal'] == alter_kurz]
     result_list = []
     cols = df.columns
-    # TODO: drop itertuples for faster vector implementation
     for row in alter_kurz.itertuples():
-        splitter = rnd.uniform(dis_low, dis_high)
-        val_tuple = calc_distro_sum(row.Anzahl, splitter)
-        res_list = value_distro(row.Auspraegung_Code, val_tuple, row, attr_ident)
+        splitter = rnd.uniform(dis_low,
+                               dis_high)  # runs for every row to add certain level of noise to group allocation
+        val_tuple = split_val_by_share(row.Anzahl, splitter)
+        res_list = reallocate_vals(row.Auspraegung_Code, val_tuple, row, attr_ident)
         group_one = res_list[0]
         group_two = res_list[1]
         result_list.append(group_one)
         result_list.append(group_two)
     result_df = pd.DataFrame(result_list, columns=cols)
+    #TODO: test if loc is necessary here - i think it is an old loc as no group allocation works with -1 as identifier anymore
     return result_df.loc[result_df['Auspraegung_Code'] != -1]
 
 
 def rem_by_mask(df: pd.DataFrame, mask: pd.Series, val=True):
     """
-    Drops values provided in by boolean mask.
+    Drops values provided by boolean mask.
 
     :param df: Dataframe to check against.
     :param mask: boolean mask
@@ -103,13 +101,13 @@ def rem_by_mask(df: pd.DataFrame, mask: pd.Series, val=True):
 
 def remap_groups(df: pd.DataFrame, mapping: dict):
     """
-    Based on a dict passed the Auspraegung Code of an Attr is changed.
+    Based on a dict passed, the Auspraegung Code of an Attr is redefined.
 
 
-    :param df: Dataframe to regroup
+    :param df: Dataframe to remap
     :param mapping: dictionary providing a mapping to regroup. All groups that exist in df
     should be specified here.
-    :return: Dataframe with new Attribute Codes based on mapping provided in mapping dict.
+    :return: Dataframe with new attribute Codes based on mapping provided in mapping dict.
     """
     mapping_keys = list(mapping.keys())
     df = df.loc[df['Merkmal'].isin(mapping_keys)]
@@ -126,10 +124,10 @@ def calc_group_max(df: pd.DataFrame, col_to_group='Gitter_ID_100m', col_to_max='
     Groups based on given column and searches for max value in groups.
 
     :param df: Dataframe to group.
-    :param col_to_group: Column to group by. List possible.
+    :param col_to_group: Column(s) to group by.
     :param col_to_max: Column to find max from.
     :param cols: Column names to be returned.
-    :return: Dataframe where max in a specific column has been found for each grouped.
+    :return: Dataframe where max in a specific column has been found for each group.
     """
     cell_max = []
     cell_group = df.groupby(col_to_group)
@@ -142,7 +140,7 @@ def calc_group_max(df: pd.DataFrame, col_to_group='Gitter_ID_100m', col_to_max='
 def mult_col_dict(df: pd.DataFrame, mapping: dict, new_col: str, prdne, prdtwo, cond):
     """
     If condition in specified row[col] is met calcs the product of a cell value and a corresponding entry in a dictionary.
-    # TODO: Error Handling KeyError - weights[x[prdtwo]] might throw a key error if passed x is not a key in dict.
+
     :param df: Dataframe to do the multiplication in.
     :param mapping: Dictionary providing the second operand for multiplication.
     :param new_col: Result column to attach to the dataframe.
@@ -168,8 +166,7 @@ def calc_cell_index(gemeinde_group, weight_map, index_columns, interest_area):
     :param interest_area: area of interest is added as column to the result list
     :return: list of lists containinig cell indices
     """
-    # TODO: seperate gemeinde fill and index calc in calc cell index func
-    # TODO: extract functions
+
     index_list = []
     for name, gem in gemeinde_group:
         codes_count = get_code_counts(gem)
@@ -185,15 +182,14 @@ def calc_cell_index(gemeinde_group, weight_map, index_columns, interest_area):
     return index_list
 
 
-def count_attr_in_gem(gem):
+def count_attr_in_gem(gem, col='Merkmal'):
     """
-    Counts the number of occurences of an attribute in a gemeinde group object. Shows the share of an attribute
-    to the total number of attributes in a group.
+    Counts the number of occurences of an attribute in a group object.
 
     :param gem: Group Object.
     :return: Returns a df with a share for each attribute in the gemeinde. Index is reset.
     """
-    return gem.value_counts(subset=['Merkmal'], normalize=True).reset_index()
+    return gem.value_counts(subset=[col], normalize=True).reset_index()
 
 
 def sum_cell_index(cell, gem_vals, cols):
@@ -202,27 +198,27 @@ def sum_cell_index(cell, gem_vals, cols):
     return geo_point, index
 
 
-def purge_duplicates(cell, gem_vals, cols):
+def purge_duplicates(cell, potential_dupl, cols, geom='geometry', subset=['Merkmal', 'Auspraegung_Code']):
     """
-    Purge duplicate entries identified by ['Merkmal', 'Auspraegung_Code'] from cell group.
+    Purges duplicates identified by df subset. Keeps first occurrence.
     Duplicates occur because of gemeinde fill values being added as additional values to calculate cell index.
 
     :param cell: group of cell values
-    :param gem_vals: gemeinde fill values
+    :param potential_dupl: fill values
     :param cols: Columns to append the gemeinde fill values by
     :return: cell group purged of logically duplicate values; geo_point used to fill the missing geometries left by the merge of the gemeinde fill values
     """
 
-    geo_point = grab_any_valid_value(cell, 'geometry')
-    cell = cell.append(gem_vals)[cols].reset_index().set_crs(crs='EPSG:3035')
-    mask = cell.duplicated(subset=['Merkmal', 'Auspraegung_Code'], keep='first')
+    geo_point = grab_any_valid_value(cell, geom)
+    cell = cell.append(potential_dupl)[cols].reset_index().set_crs(crs='EPSG:3035')
+    mask = cell.duplicated(subset=subset, keep='first')
     cell = rem_by_mask(cell, mask)
     return cell, geo_point
 
 
 def grab_any_valid_value(df, col):
     """
-    Grabs a valid (non nan) value of a column in a passed df.
+    Drops na values in col and returns remaining value at position 0.
 
     :param df: Dataframe
     :param col: Column to grab value from
@@ -231,22 +227,22 @@ def grab_any_valid_value(df, col):
     return df[col].dropna().values[0]
 
 
-def inner_merge_df(sum_codes, codes_count, on=['Merkmal', 'Auspraegung_Code']):
+def inner_merge_df(sum_codes: pd.DataFrame, codes_count: pd.DataFrame, on=['Merkmal', 'Auspraegung_Code']) -> pd.DataFrame:
     return sum_codes.merge(codes_count, on=on, how='inner')
 
 
-def get_code_counts(gem):
+def get_code_counts(group, subset=['Merkmal', 'Auspraegung_Code'], col_name='Counts'):
     """
-    Counts occurrences of attribute - attribute code combinations.
-    "How many observations are in the Gemeinde?"
+    Counts occurrences of attribute - attribute code combinations. Creates new column in df with col_name.
 
-    :param gem: Group object.
-    :return: A group object / df with counts per [attributes and attribute code]. Index is reset.
+    :param col_name: Name of result column to append to df.
+    :param group: Group object.
+    :return: A pandas group object with counts per [attributes and attribute code]. Index is reset.
     """
-    return gem.value_counts(subset=['Merkmal', 'Auspraegung_Code']).reset_index().rename({0: "Counts"}, axis=1)
+    return group.value_counts(subset=subset).reset_index().rename({0: col_name}, axis=1)
 
 
-def calc_attr_median(attr_distro):
+def calc_attr_median(attr_distro: pd.DataFrame) -> pd.DataFrame:
     """
     :param attr_distro: df containing sum of number of occurences and count of attribute - attribute code combinations
     :return: Df with Df[Calc Distro Attr/Cell] containing the median value for each attribute - attribute code combination in a group.
@@ -254,19 +250,19 @@ def calc_attr_median(attr_distro):
     return attr_distro['Anzahl'].div(attr_distro['Counts'])
 
 
-def infer_gem_vals(attr_median, attr_ratio, weight_map):
+def infer_gem_vals(df_one: pd.DataFrame, df_two: pd.DataFrame, weight_map: dict) -> gpd.GeoDataFrame:
     """
-    Calculates a gemeinde fill value based on the median value for each attribute-attribute code combination and
-    the absolute share of attribute occurence in the Gemeinde.
-    Gemeinde fille values are weighted by the weight_map provided.
+    Merges two dataframes. Creates the product of two columns in the merged df. Multiplies the values in the new column with
+    mapping values based on a condition column.
 
 
-    :param attr_median: Median value for each attribute-attribute-code combination in a gemeinde
-    :param attr_ratio: Share of attribute value in gemeinde occurences.
+    :param df_one: Median value for each attribute-attribute-code combination in a gemeinde
+    :param df_two: Share of attribute value in gemeinde occurences.
     :param weight_map: weight mapping as specified in config.json
-    :return: Df indicating a weighted Gemeinde Fill interpreted as Attribute Index for the Gemeinde passed.
+    :return: Geodataframe with a weighted multiplication result of two merged dataframes.
     """
-    gem_vals = attr_median.merge(attr_ratio, on='Merkmal', how='inner').rename({0: 'Ratio'}, axis=1)
+    # TODO: merge is not necessary for logic of program. Purge to run more efficiently
+    gem_vals = df_one.merge(df_two, on='Merkmal', how='inner').rename({0: 'Ratio'}, axis=1)
     gem_vals['Gemeinde Fill Values'] = gem_vals['Calc Distro Attr/Cell'] * gem_vals['Ratio']
     gem_vals = mult_col_dict(gem_vals, weight_map, new_col='Attr Index', prdne='Gemeinde Fill Values',
                              prdtwo='Auspraegung_Code', cond='Merkmal')
@@ -274,47 +270,48 @@ def infer_gem_vals(attr_median, attr_ratio, weight_map):
     return gpd.GeoDataFrame(gem_vals, geometry='geometry', crs='EPSG:3035')
 
 
-def group_and_sum_code_counts(gem, cols=['Merkmal', 'Auspraegung_Code'], col_count='Anzahl'):
+def group_and_sum_code_counts(group, cols=['Merkmal', 'Auspraegung_Code'], col_count='Anzahl'):
     """
     Sums the number of occurrences of every attribute - attribute code combination.
 
-    :param gem: Group Object / Df
+    :param group: Group Object / Df
     :return: Group Object / Df with sums of groups.
     """
-    return gem.groupby(cols)[col_count].sum().reset_index()
+
+    return group.groupby(cols)[col_count].sum().reset_index()
 
 
-def normalize_column(series: pd.Series, new_max=1, new_min=0) -> float:
+def normalize_column(series: pd.Series, new_max=1, new_min=0) -> pd.Series:
     """
     Casts series data points between 0-1 based on min and max values in series.
 
     :param: date_to_norm: int or float value to normalize.
     :param: abs_min: Min val. in scope.
     :param: abs_max: Max val. in scope.
-    :return: Normalized value between 0-1 of Dataframe.
+    :return: Series with normalized values between 0-1.
     """
     abs_max = series.max()
     abs_min = series.min()
     return series.apply(lambda date: ((date - abs_min) / (abs_max - abs_min)) * (new_max - new_min) + new_min)
 
 
-def calc_gemeinde_index(gem_group):
+def sum_gemeinde_idx(df_group: pd.DataFrame, sum_col='Haushalte_Index') -> dict:
     """
-    Index is calculated as sum(Count_Haushalte * Cell_Index)
+    Sums values of sum_col for every group object in passed df.
 
-    :param gem_group:
-    :return: Dictionary with Gemeinde name as key and gemeinde Index as value
+    :param df_group: grouped pd.Dataframe
+    :return: Dictionary group name as key and sum of sum_col as value.
     """
-    gem_idx = {}
-    for name, gem in gem_group:
-        gem_index = gem.sum(numeric_only=True)['Haushalte_Index']
-        gem_idx.update({name: gem_index})
-    return gem_idx
+    idx = {}
+    for name, gem in df_group:
+        gem_index = gem.sum(numeric_only=True)[sum_col]
+        idx.update({name: gem_index})
+    return idx
 
 
 def calc_sum_zba(gem_idx_dict):
     """
-    Calc the sum of all Gemeinden in the Zulassungsbezirk.
+    Casts dictionary to pd.Dataframe and sums the values. Index is reset.
 
     :param gem_idx_dict:
     :return: Dataframe containing the sum of all gemeinde indeces.
@@ -322,30 +319,30 @@ def calc_sum_zba(gem_idx_dict):
     return pd.DataFrame.from_dict(gem_idx_dict, orient='index').reset_index().sum()[0]
 
 
-def calc_gem_ratio(gemeinde_idx_dict, sum_zba):
+def calc_gem_ratio(dict: dict, divisor: float) -> dict:
     """
-    Calculates the ratio of gemeinde index and the sum of all gemeinde indices in the zba.
+    Calculates a ratio for each value in dict as val/divisor.
 
-    :param gemeinde_idx_dict:
-    :param sum_zba:
-    :return:
+    :param dict: Dictionary of float values.
+    :param divisor: Int or Float.
+    :return: Dictionary with ratios for each original entry.
     """
-    idx_keys = gemeinde_idx_dict.keys()
+    idx_keys = dict.keys()
     ratio_dict = {}
     for key in idx_keys:
-        gem_idx = gemeinde_idx_dict.get(key)
-        ratio = gem_idx / sum_zba
+        gem_idx = dict.get(key)
+        ratio = gem_idx / divisor
         ratio_dict.update({key: ratio})
     return ratio_dict
 
 
 def calc_num_ev_gem(ratios: dict, anzahl_evs_zb: int) -> dict:
     """
-    Multiplies the count of EV in ZBA with the gemeinde ratio.
+    Multiplies each dict entry with an int.
 
     :param ratios:
     :param anzahl_evs_zb:
-    :return: Dict with number of cars in a gemeinde.
+    :return: Dictionary of multiplied value entries.
     """
     ev_dict = {}
     for key in ratios.keys():
@@ -393,7 +390,7 @@ def add_haushalte_index(index_df):
 
 def calc_zula_ratio(index_df):
     gem_group = index_df.groupby(by='Gemeinde')
-    gemeinde_idx_dict = calc_gemeinde_index(gem_group)
+    gemeinde_idx_dict = sum_gemeinde_idx(gem_group)
     sum_zba = calc_sum_zba(gemeinde_idx_dict)
     ratios = calc_gem_ratio(gemeinde_idx_dict, sum_zba)
 
