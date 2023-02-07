@@ -284,14 +284,13 @@ print(
 if fe.path_exists(ifunc.concat_filepath(gdf, interest_area)) is False:
     # TODO: set into write back loop
     # THOMAS part
-    kfz_data = ju.read_json_elements(config_obj, "kfz_data", "filepath")
     kfz_data = ifunc.import_vehicle_registration_by_excel(kfz_data)
+    kfz_data = liz.renaming_some_zulassungsbezirke(kfz_data)
     kfz_shapefile = liz.str_replace_of_name_in_base_polygon_gdf(kfz_shapefile)
     kfz_shapefile = liz.delete_doubled_zulassungsbezirke(kfz_shapefile)
     kfz_shapefile = liz.rename_names_of_some_cities(kfz_shapefile)
 
     kfz_data_in_shapefile = liz.cars_with_zulassungsbezirk_polygon_gdf(kfz_data, kfz_shapefile)
-
     gemeinden_polygon_gdf = lgp(gem_shapefile)
     ladestationen_gdf = lsg(ladestationen_data)
     # TODO: Get rid of "None" column in ladestationen_gdf
