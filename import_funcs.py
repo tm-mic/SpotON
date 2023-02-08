@@ -40,8 +40,10 @@ def obtain_bl_polygon(shp_path: str, bl_name: str):
     :param epsg: CRS to cast the polygon to.
     :return: One polygon from shp with x polygons.
     """
-    polygon_gdf = read_shp(shp_path, ["GEN", "geometry"])
-    polygon_gdf.rename(columns={'GEN': 'NAME'}, inplace=True)
+    polygon_gdf = gpd.read_file(shp_path, encoding='utf-8')
+    if 'GEN' in polygon_gdf:
+        polygon_gdf['GEN', 'geometry']
+        polygon_gdf.rename(columns={'GEN': 'NAME'}, inplace=True)
     polygon_gdf = reproject(polygon_gdf)
     return polygon_gdf.where(polygon_gdf['NAME'] == bl_name).dropna()
 

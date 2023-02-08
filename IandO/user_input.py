@@ -1,6 +1,7 @@
 from import_funcs import obtain_bl_polygon as op
 from import_funcs import read_shp
 from IandO import json_utility as ju
+import geopandas as gpd
 
 
 # TODO: add redo possibility through listener
@@ -32,11 +33,16 @@ def choose_aoi_shp(aoi_path_dict: dict):
 def select_aoi(aoi_shp_path):
     """
     From shapefile select an entry from the "GEN" column.
+    # TODO: Implement handling of "NAME" instead of "GEN" column in KFZ250.shp
 
     :param aoi_shp_path: Shapefile path.
     :return: Name of selected aoi. Geometry of selected aoi.
     """
-    aoi_list = read_shp(aoi_shp_path, "GEN").unique()
+    aoi_df = gpd.read_file(aoi_shp_path, encoding='utf-8')
+    if "GEN" in aoi_df:
+        aoi_list = aoi_df["GEN"].unique()
+    elif "NAME" in aoi_df:
+        aoi_list = aoi_df["NAME"].unique()
     print(aoi_list)
     while True:
         try:
