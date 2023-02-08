@@ -1,4 +1,4 @@
-from import_funcs import obtain_bl_polygon as op
+from import_funcs import obtain_aoi_polygon as op
 from import_funcs import read_shp
 from IandO import json_utility as ju
 
