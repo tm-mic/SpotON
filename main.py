@@ -137,7 +137,7 @@ def gem_index(df, haus_df):
 
     df = df.merge(haus_df, on='Gitter_ID_100m', how='left').dropna(how='any')
     df = slice_df_cols(df, ['Gitter_ID_100m', 'AOI', 'Gemeinde', 'Cell Index', 'Anzahl', 'geometry'])
-    df['Cell Index'] = bed.normalize_column(df['Cell Index'])
+    # df['Cell Index'] = bed.normalize_column(df['Cell Index']) # unnecessary ass only gemeinde values need normalization
     df = bed.add_haushalte_index(df)
     zula_ratio = bed.calc_zula_ratio(df)
     g_index = bed.add_gemeinde_index(df, zula_ratio)
