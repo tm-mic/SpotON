@@ -42,7 +42,7 @@ def obtain_aoi_polygon(shp_path: str, aoi_name: str):
     """
     polygon_gdf = gpd.read_file(shp_path, encoding='utf-8')
     if 'GEN' in polygon_gdf:
-        polygon_gdf['GEN', 'geometry']
+        polygon_gdf[['GEN', 'geometry']]
         polygon_gdf.rename(columns={'GEN': 'NAME'}, inplace=True)
     polygon_gdf = reproject(polygon_gdf)
     return polygon_gdf.where(polygon_gdf['NAME'] == aoi_name).dropna()
