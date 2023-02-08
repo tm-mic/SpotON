@@ -17,8 +17,10 @@ def choose_aoi_shp(aoi_path_dict: dict):
     print(f"please choose one of the following aoi: {aoi_path_dict.keys()}")
     while True:
         try:
-            user_input = str(input(f"Which aoi is interesting for you?"))
-            shp_selec = aoi_path_dict.get(user_input)
+            # TODO: Extract user input to interest_area_ladestationen_poly
+            global user_input_aoi_type
+            user_input_aoi_type = str(input(f"Which aoi is interesting for you?"))
+            shp_selec = aoi_path_dict.get(user_input_aoi_type)
             if shp_selec is None:
                 print("The selection you have made is not valid.")
                 continue
@@ -54,7 +56,7 @@ def select_aoi(aoi_shp_path):
                 continue
             else:
                 aoi_poly = user_aoi.dissolve().explode(index_parts=False).iloc[0]['geometry']
-                return user_input, aoi_poly
+                return user_input, aoi_poly, user_input_aoi_type
         except ValueError:
             print(
                 "Please enter a String representing a valid Area of Interest (AOI). The valid area of interests are depicted in the list.")
@@ -71,4 +73,4 @@ def ui_aoi(shp_dict):
 
     user_aoi_path = choose_aoi_shp(shp_dict)
     user_selec = select_aoi(user_aoi_path)
-    return user_selec[0], user_selec[1]
+    return user_selec[0], user_selec[1], user_selec[2]

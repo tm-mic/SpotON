@@ -19,6 +19,8 @@ from geometry_operations.coord_to_polygon import load_gemeinde_polygon_to_gdf as
 from geometry_operations.coord_to_polygon import ladestationen_to_gdf as lsg
 from geometry_operations import oels_in_gemeinde as og
 from IandO.user_input import ui_aoi as ui
+from geometry_operations import map_parking_areas as mpa
+from geometry_operations.plot_the_spot import plot_folium_map_from_GeoDataFrames as pts
 
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
@@ -53,6 +55,7 @@ ladestationen_data = ju.read_json_elements(config_obj, "ev_charging_points", "fi
 attr_mapping = ju.read_json_elements(config_obj, 'attr_mapping')
 weight_map = ju.read_json_elements(config_obj, 'weight_mapping')
 index_columns = ["Gitter_ID_100m", "Merkmal", "Auspraegung_Code", 'AOI', 'GEN', 'Attr Index', 'geometry']
+ars_dict = config_obj.get('ars_dict')
 
 
 def create_point_ref(zensus, cols, aoi, aoi_poly, gem_shp):
@@ -189,6 +192,7 @@ def merge_to_gdf(df, to_merge, on='Gitter_ID_100m',
 u_input = ui(shp_config)
 interest_area = u_input[0]
 aoi_polygon = u_input[1]
+aoi_type = u_input[2]
 
 # setup result folders
 folders = [point_ref_path, data_path, index_path, gdf_csv]
@@ -312,16 +316,27 @@ if fe.path_exists(ifunc.concat_filepath(gdf, interest_area)) is False:
     gemeinde_ladestationen_poly = og.car_oels_gemeinde_zula_gdf(kfz_data_in_shapefile, gemeinde_ladestationen_poly)
 
     interest_area_ladestationen_poly = bed.calc_cars_in_interest_area(gemeinde_ladestationen_poly, index_df,
-                                                                      interest_area)
-    # TODO: Throws Errors for caps and umlauts. Implement consistent handling
-    # TODO: See bedarfe.py for consistent handling of different types of aoi
+                                                                      interest_area, aoi_type, ars_dict)
+
+    # TODO Max: Implement Cluster
+    parking_data = ju.read_json_elements(config_obj, 'parking_values', "filepath")
+
+    parking_areas_of_intr = mpa.parking_areas_in_interest_area(parking_data, interest_area_ladestationen_poly)
+
+    parking_areas_of_intr = mpa.get_ladesaeulen_locations(parking_areas_of_intr)
+
+    # GeoDataFrame1 = ifunc.obtain_aoi_polygon(r"E:\Universität\KInf-Projekt-BM\spoton\data\KFZ250.shp", interest_area)
+    # # TODO: Automate selection of shapefile according to aoi_type
+    #
+    # pts(parking_areas_of_intr, GeoDataFrame1, "Oberallgäu.html")
+
+    # TODO: Handle writing of interest_area_ladestationen_poly to parquet
 
 #     interest_area_ladestationen_poly.to_parquet(ifunc.concat_filepath(gdf_csv, interest_area))
 #
 #     print("The amount of EV for each Gemeinde in the interest area has been calculated.")
 # else:
 #     cars_in_aoi = gpd.read_parquet(ifunc.concat_filepath(gdf_csv, interest_area))
-# TODO: Handle writing of interest_area_ladestationen_poly to parquet
 
 totaltimestop = timeit.default_timer()
 print(totaltimestop - totaltimes)
