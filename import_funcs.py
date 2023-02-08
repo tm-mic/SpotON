@@ -31,12 +31,12 @@ def read_shp(shp_path, cols):
     return gpd.read_file(shp_path, encoding='utf-8')[cols]
 
 
-def obtain_bl_polygon(shp_path: str, bl_name: str):
+def obtain_aoi_polygon(shp_path: str, aoi_name: str):
     """
     Grabs a polygon from a shapefile.
 
     :param shp_path: Path to shapefile
-    :param bl_name: identifier of the polygon to grab
+    :param aoi_name: identifier of the polygon to grab
     :param epsg: CRS to cast the polygon to.
     :return: One polygon from shp with x polygons.
     """
@@ -45,7 +45,7 @@ def obtain_bl_polygon(shp_path: str, bl_name: str):
         polygon_gdf['GEN', 'geometry']
         polygon_gdf.rename(columns={'GEN': 'NAME'}, inplace=True)
     polygon_gdf = reproject(polygon_gdf)
-    return polygon_gdf.where(polygon_gdf['NAME'] == bl_name).dropna()
+    return polygon_gdf.where(polygon_gdf['NAME'] == aoi_name).dropna()
 
 
 def clip_crs_by_polygon(polygon_mask, point_gdf):
