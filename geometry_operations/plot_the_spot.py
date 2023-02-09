@@ -19,7 +19,7 @@ def plot_folium_map_from_GeoDataFrames(parking_areas_of_intr, aoi_polygon, inter
     :return: html file (folium map in OSM)
     """
 
-    aoi_polygon = gpd.GeoDataFrame(index=[0], crs='epsg=4326', geometry=[aoi_polygon])
+    aoi_polygon = gpd.GeoDataFrame(index=[0], crs='epsg:4326', geometry=[aoi_polygon])
     aoi_polygon_copy = aoi_polygon.copy()
     aoi_polygon_copy['geometry'] = aoi_polygon_copy['geometry'].centroid
     aoi_polygon_copy['lon'] = aoi_polygon_copy['geometry'].x
@@ -55,7 +55,7 @@ def plot_folium_map_from_GeoDataFrames(parking_areas_of_intr, aoi_polygon, inter
                             popup=folium.features.GeoJsonPopup(fields=['NAME_Gemeinde','value', 'area', 'parking_spots',
                                                                        'ladesaeulen'])).add_to(folium_map)
 
-    folium.GeoJson(data=aoi_polygon['geometry'], name='Gemeindeumriss', style_function=lambda x: {'fillColor': 'None'})\
+    folium.GeoJson(data=aoi_polygon['geometry'], name='Area of Interest', style_function=lambda x: {'fillColor': 'None'})\
         .add_to(folium_map)
 
     folium.LayerControl().add_to(folium_map)
