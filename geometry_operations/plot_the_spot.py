@@ -19,7 +19,8 @@ def plot_folium_map_from_GeoDataFrames(parking_areas_of_intr, aoi_polygon, inter
     :return: html file (folium map in OSM)
     """
 
-    aoi_polygon = gpd.GeoDataFrame(index=[0], crs='epsg:4326', geometry=[aoi_polygon])
+    aoi_polygon = gpd.GeoDataFrame(index=[0], crs='epsg:3035', geometry=[aoi_polygon])
+    aoi_polygon = aoi_polygon.to_crs(epsg=4326)
     aoi_polygon_copy = aoi_polygon.copy()
     aoi_polygon_copy['geometry'] = aoi_polygon_copy['geometry'].centroid
     aoi_polygon_copy['lon'] = aoi_polygon_copy['geometry'].x
