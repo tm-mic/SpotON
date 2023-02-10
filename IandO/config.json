@@ -90,22 +90,22 @@
 
   "ars_dict":
   {
-    "Schleswig-Holstein":  "01",
-    "Hamburg": "02",
-    "Niedersachsen": "03",
-    "Bremen": "04",
-    "Nordrhein-Westfalen":  "05",
-    "Hessen": "06",
-    "Rheinland-Pfalz": "07",
-    "Baden-Württemberg": "08",
-    "Bayern":  "09",
-    "Saarland": "10",
-    "Berlin": "11",
-    "Brandenburg": "12",
-    "Mecklenburg-Vorpommern":  "13",
-    "Sachsen": "14",
-    "Sachsen-Anhalt": "15",
-    "Thüringen": "16"
+    "SCHLESWIG-HOLSTEIN":  "01",
+    "HAMBURG": "02",
+    "NIEDERSACHSEN": "03",
+    "BREMEN": "04",
+    "NORDRHEIN-WESTFALEN":  "05",
+    "HESSEN": "06",
+    "RHEINLAND-PFALZ": "07",
+    "BADEN-WUERTTEMBERG": "08",
+    "BAYERN":  "09",
+    "SAARLAND": "10",
+    "BERLIN": "11",
+    "BRANDENBURG": "12",
+    "MECKLENBURG-VORPOMMERN":  "13",
+    "SACHSEN": "14",
+    "SACHSEN-ANHALT": "15",
+    "THUERINGEN": "16"
   }
 }
 
