@@ -29,7 +29,7 @@ shp_config = config_obj.get('shapefile')
 point_ref_path = ju.read_json_elements(config_obj, 'results', 'point_ref')
 data_path = ju.read_json_elements(config_obj, 'results', 'data')
 index_path = ju.read_json_elements(config_obj, 'results', 'cell_index')
-gdf = ju.read_json_elements(config_obj, 'results', 'gdf')
+gdf_path = ju.read_json_elements(config_obj, 'results', 'gdf')
 zensus_conversion = ju.read_json_elements(config_obj, "data_conversion", "Zensus_data")
 data_conversion = ju.read_json_elements(config_obj, "data_conversion", "demographic_data")
 area_shapefile = ju.read_json_elements(config_obj, "shapefile", "Landkreis")
@@ -285,7 +285,7 @@ else:
 print(
     "The Cell indeces have been calculated. Next the amount of cars for each Gemeinde based on the cell indeces will be calculated.")
 
-if fe.path_exists(ifunc.concat_filepath(gdf, interest_area)) is False:
+if fe.path_exists(ifunc.concat_filepath(gdf_path, interest_area)) is False:
     # TODO: set into write back loop
     # THOMAS part
     kfz_data = ifunc.import_vehicle_registration_by_excel(kfz_data)
@@ -318,12 +318,12 @@ if fe.path_exists(ifunc.concat_filepath(gdf, interest_area)) is False:
     interest_area_ladestationen_poly = bed.calc_cars_in_interest_area(gemeinde_ladestationen_poly, index_df,
                                                                       interest_area, aoi_type, ars_dict)
 
-#     # TODO: Handle writing of interest_area_ladestationen_poly to parquet
-#
-#     interest_area_ladestationen_poly.to_parquet(ifunc.concat_filepath(gdf_csv, interest_area))
+    # TODO: Handle writing of interest_area_ladestationen_poly to parquet
+
+#     interest_area_ladestationen_poly.to_parquet(ifunc.concat_filepath(gdf_path, interest_area))
 #     #
 # else:
-#     interest_area_ladestationen_poly = gpd.read_parquet(ifunc.concat_filepath(gdf_csv, interest_area))
+#     interest_area_ladestationen_poly = gpd.read_parquet(ifunc.concat_filepath(gdf_path, interest_area))
 
 print("The amount of EV for each Gemeinde in the interest area has been calculated.")
 
