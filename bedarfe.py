@@ -365,11 +365,17 @@ def calc_cars_in_interest_area(gemeinde_ladestationen_poly, index_df, interest_a
         interest_area_ladestationen_poly = gemeinde_ladestationen_poly.loc[
         gemeinde_ladestationen_poly['NAME_Zula'] == interest_area]
     elif aoi_type == 'Bundesland':
+
+        interest_area = interest_area.upper()
+        interest_area = interest_area.replace('Ü', 'UE')
+        interest_area = interest_area.replace('Ä', 'AE')
+        interest_area = interest_area.replace('Ö', 'OE')
+
         ars_key = ars_dict.get(interest_area)
+        ars_key = int(ars_key)
+        gemeinde_ladestationen_poly = gemeinde_ladestationen_poly.astype({'ARS': 'int32'})
         interest_area_ladestationen_poly = gemeinde_ladestationen_poly.loc[
         gemeinde_ladestationen_poly['ARS'] == ars_key]
-
-    # TODO: Implement flexible handly for all types of aoi (Bundesland, Landkreis, Zulassungsbezirk, Gemeinde)
 
     anzahl_evs_zb = interest_area_ladestationen_poly['EVIng'].iloc[0]
 
