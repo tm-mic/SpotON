@@ -318,25 +318,20 @@ if fe.path_exists(ifunc.concat_filepath(gdf, interest_area)) is False:
     interest_area_ladestationen_poly = bed.calc_cars_in_interest_area(gemeinde_ladestationen_poly, index_df,
                                                                       interest_area, aoi_type, ars_dict)
 
-    # TODO Max: Implement Cluster
-    parking_data = ju.read_json_elements(config_obj, 'parking_values', "filepath")
-
-    parking_areas_of_intr = mpa.parking_areas_in_interest_area(parking_data, interest_area_ladestationen_poly)
-
-    parking_areas_of_intr = mpa.get_ladesaeulen_locations(parking_areas_of_intr)
-
-    # GeoDataFrame1 = ifunc.obtain_aoi_polygon(r"E:\Universität\KInf-Projekt-BM\spoton\data\KFZ250.shp", interest_area)
-    # # TODO: Automate selection of shapefile according to aoi_type
-    #
-    # pts(parking_areas_of_intr, GeoDataFrame1, "Oberallgäu.html")
-
-    # TODO: Handle writing of interest_area_ladestationen_poly to parquet
-
-#     interest_area_ladestationen_poly.to_parquet(ifunc.concat_filepath(gdf_csv, interest_area))
+#     # TODO: Handle writing of interest_area_ladestationen_poly to parquet
 #
-#     print("The amount of EV for each Gemeinde in the interest area has been calculated.")
+#     interest_area_ladestationen_poly.to_parquet(ifunc.concat_filepath(gdf_csv, interest_area))
+#     #
 # else:
-#     cars_in_aoi = gpd.read_parquet(ifunc.concat_filepath(gdf_csv, interest_area))
+#     interest_area_ladestationen_poly = gpd.read_parquet(ifunc.concat_filepath(gdf_csv, interest_area))
+
+print("The amount of EV for each Gemeinde in the interest area has been calculated.")
+
+    # TODO: Add following segment into writeback-loop
+parking_data = ju.read_json_elements(config_obj, 'parking_values', "filepath")
+parking_areas_of_intr = mpa.parking_areas_in_interest_area(parking_data, interest_area_ladestationen_poly)
+parking_areas_of_intr = mpa.get_ladesaeulen_locations(parking_areas_of_intr)
+pts(parking_areas_of_intr, aoi_polygon, interest_area)
 
 totaltimestop = timeit.default_timer()
 print(totaltimestop - totaltimes)
