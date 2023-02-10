@@ -1,7 +1,31 @@
 ## Präambel
-Short description of the conceptual model.
+*SpotOn* is a data analysis script that infers the position of ev charging points based on demographic zensus data and a multi-criteria analysis of promising parking spot candidates. It is flexible in which aoi it processes.
+The analysis done closely relates to the factual planning practices in Germany.
+It is based on several assumptions:
+1) Gemeinden are politically and legally responsible for the construction of ev charing points.
+2) The likelihood of spatial ev distribution is based on the demographic structure of a region.
+3) The spatial distribution of ev's can be expressed in a ratio based index.
+4) Parking spots are prime candidates for the erection of ev charging points.
+5) EV charging points are erected in "bulk". Meaning if a parking spot is identified all available spots will be erected there before other parking spots receive charging points.
 
+SpotOn uses following data basis as specified in the config.json. 
+- Familie
+- Gebäude
+- Haushalte
+- Bevoelkerung
+- KFZ Data (on Zulassungsbezirke level)\
 
+As of version 0.1 SpotOn is tested to work with the data sets from the 2011 Zensus data in CSV format.
+
+On a high level the algorithm for the calculation of the ev charging points can be described as follows:
+- demographic data is imported, disaggregated, and regrouped
+- groups are weighted
+- a weighted index f.e. 100mx100m cell is calculated
+- the index is summed to form a Gemeinde-Index
+- the set of cars specified on ZBA level are distributed based on the normalized index
+- valid promising candidates (parking spots) are weighted and grouped
+- the difference (phi) between the expansion goal for ev charging points and the existing charging points for each Gemeinde are calculated
+- phi is used to distribute as many ev charging spots to parking area in bulk starting with the parking spot with the highest value 
 
 ## Conceptual Challenges and Algorithmic Solutions
 ### Cell Index Calculation (Christian)
@@ -20,13 +44,13 @@ Age data on cell level is encoded in the raw data in two different attribute gro
 
 During runtime the data is being disaggregated. Based on a mapping between Alter_Kurz and Alter_10_JG, Alter_Kurz age groups are redistributed into Alter_10_JG age groups. To do so a random splitter value ranging from 0.4 - 0.6 is assumed and the number of observations in Alter_Kurz is split into corresponding Alter_10_JG age groups. Original Alter_10_JG age group obersavtions are retained. Only non existing Alter_10_JG age groups are appended to the resulting data frame. 
 
-This widens the data basis and allows to draw some information from the mixed use of different non conforming age groupings. However, the redistribution relies on the assumption, that age groups described in the Alter_Kurz are more or less evenly distributed (between 0.4 - 0.6).
+This widens the data basis and allows to draw some information from the mixed use of different non conforming age groupings. However, the redistribution relies on the assumption, that age groups described in the Alter_Kurz are more or less evenly distributed matching their pair of Alter_10JG age groups (between 0.4 - 0.6).
 
 2) Attribute groupings are remapped to match group-value specifications. (C)
 The raw data attribute observations are grouped as described in the metadata. It is clear, however, that only certain groups carry information to be sensically interpreted (weighted) when trying to distribute evs spatially based on an index. Hence, groups are remapped to match the groups specified in the config.json.
 
 3) Missing data values are infered by median aggregates on the gemeinde level. (C)
-For many cells there are observations (Insgesamt > 0), however, no attributes are listed in the dataset. This is crucial as observations have been made but there is no quantification of these in the raw dataset. In tune with our approach to redistribute ev s and ev charging poles on the gemeinde level median values for each attribute-code combination and each Gemeinde are calculated and missing values are added to the cells of a gemeinde. These "filler" values allow to add a 'baseline' for each Gemeinde, hence, making Gemeinden more comparable. The filler values are summed into the cell index.
+For many cells there are observations (Insgesamt > 0), however, no attributes are listed in the dataset. This is crucial as observations have been made but there is no qualification of these in the raw dataset. In tune with our approach to redistribute ev s and ev charging poles on the gemeinde level median values for each attribute-code combination and each Gemeinde are calculated and missing values are added to the cells of a gemeinde. These "filler" values allow to add a 'baseline' for each Gemeinde, hence, making Gemeinden more comparable. The filler values are summed into the cell index.
 
 The median value for each attribute-code combination is calculated.
 The median value is multiplied by the share (number of occurences in the Gemeinde / total number of observations in the Gemeinde) of the corresponding attribute.
@@ -48,14 +72,37 @@ A key concept of our program is to introduce a certain level of flexibility to t
 
 
 2) #### Runtime.
-Runtime is a major problem we encountered when broadening the data basis, reading and writing the data for large areas. We used several strategies to increase the speed of the program significantly.
+Runtime is a major problem we encountered when broadening the data basis, running geographic operations, reading and writing the data for large areas. We used several strategies to increase the speed of the program significantly.
 - multithreading to read the csv data 
 - write csv data back to .parquet (HEX format) file format and read from there
-- folder structure to save intermediate results and check for already existing data during each run
+- set up folder structure to save intermediate results and check for already existing data during each run
 - vectorization of all dataframe operations where possible
 
 ## Architektur
+SpotOn follows a basic 3 layer architecture. Essentially, the user specifies their area of interest (terminal user communication) data is imported (I/O Module) indices are calculated (Data processing) eventually important data points are written back to files.
+The architecture can be examined in detail in the following diagram. 
 
 ## Testkonzept
 
 ## Teamarbeit
+Concepts and ideas were developed as a team. We met every week at least once in order to communicate on changes, new ideas, and problems that occured.
+Next to the common communication channels (whats app, email, face to face) we communicated insights won during individual research through a text file.
+
+Ideas were tested. Working ideas were kept. Not working implementations were discarded. However, each idea and each concept brought forward was discussed and weight against the common understanding of the programs' usage.
+The teamwork was close nit. After a while certain fields of "specialization" occurred.\
+F.e. Christian mostly worked on import, data prep, cell and gemeinde index calculation.\
+Max mostly worked on questions of spatial dimension.\
+Thomas mostly refactored and tested functions.\
+While there was a bigger difference in competencies in the beginning of the project all members of the team worked their way into the project the different ways of thinking and programming. The team work was rewarding and fun.  
+
+Tools and Methods used:
+Teams | Video chat \
+Whats App | unstructured communication \
+Git | Software Version Control \
+Trello | Task Management \
+Programming Weekend | Face to Face developing ideas
+
+
+
+
+
