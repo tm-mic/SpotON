@@ -353,8 +353,11 @@ def calc_num_ev_gem(ratios: dict, anzahl_evs_zb: int) -> dict:
 def calc_cars_in_interest_area(gemeinde_ladestationen_poly, index_df, interest_area: str, aoi_type: str, ars_dict: dict):
 
     if aoi_type == 'Gemeinde':
+
         interest_area_ladestationen_poly = gemeinde_ladestationen_poly.loc[
         gemeinde_ladestationen_poly['NAME_Gemeinde'] == interest_area]
+        anzahl_evs_aoi = interest_area_ladestationen_poly['EVIng'].iloc[0]
+
     elif aoi_type == 'Zulassungsbezirk':
 
         interest_area = interest_area.upper()
@@ -364,6 +367,8 @@ def calc_cars_in_interest_area(gemeinde_ladestationen_poly, index_df, interest_a
 
         interest_area_ladestationen_poly = gemeinde_ladestationen_poly.loc[
         gemeinde_ladestationen_poly['NAME_Zula'] == interest_area]
+        anzahl_evs_aoi = interest_area_ladestationen_poly['EVIng'].iloc[0]
+
     elif aoi_type == 'Bundesland':
 
         interest_area = interest_area.upper()
@@ -377,10 +382,13 @@ def calc_cars_in_interest_area(gemeinde_ladestationen_poly, index_df, interest_a
         interest_area_ladestationen_poly = gemeinde_ladestationen_poly.loc[
         gemeinde_ladestationen_poly['ARS'] == ars_key]
 
-    anzahl_evs_zb = interest_area_ladestationen_poly['EVIng'].iloc[0]
+        aoi_group = interest_area_ladestationen_poly.groupby(by='NAME_Zula').first()
+        anzahl_evs_aoi = aoi_group['EVIng'].sum()
+
+    # TODO: Only works for single Gemeinden!! Adapt for Zulassungsbezirke and Bundesland
 
     ratios = calc_zula_ratio(index_df)
-    car_count = calc_num_ev_gem(ratios, anzahl_evs_zb)
+    car_count = calc_num_ev_gem(ratios, anzahl_evs_aoi)
 
     interest_area_ladestationen_poly.insert(10, 'EVGem',
                                             interest_area_ladestationen_poly['NAME_Gemeinde'].map(car_count))
