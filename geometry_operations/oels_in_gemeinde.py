@@ -8,8 +8,14 @@ import pandas as pd
 
 
 def oels_in_gemeinde(gemeinde_polygon_gdf, ladestationen_gdf):
-    """Creates a gdf in which the information about the amount of
-    ladestationen for each gemeinde is given."""
+    """
+    Creates a gdf in which the information about the amount of
+    ladestationen for each gemeinde is given.
+
+    :param gemeinde_polygon_gdf: gdf with all gemeinde polygons in germany
+    :param ladestationen_gdf: gdf with all ladestationen in germany
+    :return: gdf with ladestationen in every gemeinde
+    """
     oels_in_gemeinde = gemeinde_polygon_gdf.sjoin(ladestationen_gdf)
     oels_in_gemeinde_values = oels_in_gemeinde['NAME'].value_counts()
     df_oels_in_gemeinde_values = pd.DataFrame(oels_in_gemeinde_values)
@@ -23,7 +29,14 @@ def oels_in_gemeinde(gemeinde_polygon_gdf, ladestationen_gdf):
     return gdf_gemeinde_oels
 
 def add_lp_to_gdf_gemeinde_oels(ladestationen_gdf, gemeinde_polygon_gdf, gdf_gemeinde_oels):
-    """Adding the amount of ladepunkte for every gemeinde."""
+    """
+    Adding the amount of ladepunkte for every gemeinde.
+
+    :param ladestationen_gdf: gdf with all ladestationen in germany
+    :param gemeinde_polygon_gdf: gdf with all gemeinde polygons in germany
+    :param gdf_gemeinde_oels: gdf with ladestationen in every gemeinde
+    :return: gdf with all gemeinden, their ladestationen and ladepunkte
+    """
     ladepunkte_in_gemeinde = gemeinde_polygon_gdf.sjoin(ladestationen_gdf)
     ladepunkte_in_gemeinde = ladepunkte_in_gemeinde[['NAME', 'Anzahl Ladepunkte']]
     ladepunkte_in_gemeinde = ladepunkte_in_gemeinde.groupby(['NAME']).sum()
@@ -35,9 +48,15 @@ def add_lp_to_gdf_gemeinde_oels(ladestationen_gdf, gemeinde_polygon_gdf, gdf_gem
     return gdf_gemeinde_oels
 
 def oels_of_gemeinde_in_zula(gdf_gemeinde_oels, base_polygon_gdf):
-    """Intersects the centroids of gemeindepolygons with the polygons
+    """
+    Intersects the centroids of gemeindepolygons with the polygons
     of the zulassungsbezirke. 14 gemeinden are not matched because of there shape.
-    This is managed by the next functions."""
+    This is managed by the next functions.
+
+    :param gdf_gemeinde_oels: gdf with all gemeinden, their ladestationen and ladepunkte
+    :param base_polygon_gdf: gdf with all zulassungsbezirke in germany
+    :return: gdf with the gemeinden in their zulassungsbezirke (some are missing)
+    """
     gdf_gemeinde_oels['geometry'] = gdf_gemeinde_oels['geometry'].centroid
     oels_gemeinde_in_zula = base_polygon_gdf.sjoin(gdf_gemeinde_oels)
     oels_gemeinde_in_zula = oels_gemeinde_in_zula.rename(columns={'NAME_left': 'NAME_Zula'
@@ -47,7 +66,13 @@ def oels_of_gemeinde_in_zula(gdf_gemeinde_oels, base_polygon_gdf):
     return oels_gemeinde_in_zula
 
 def lost_gemeinden_gdf(gdf_gemeinde_oels):
-    """Creates a gdf with all the missing gemeinden of the previous intersection."""
+    """
+    Creates a gdf with all the missing gemeinden of the previous intersection.
+    Those gemeinden were found by different merges.
+
+    :param gdf_gemeinde_oels: gdf with all gemeinden, their ladestationen and ladepunkte
+    :return: gdf with the missing gemeinden
+    """
     missinggemeinde = gdf_gemeinde_oels.loc[
         [483, 933, 4425, 4738, 6176, 6186, 8477, 9151, 9333, 9363, 9428, 9429, 9430, 9461]]
     missinggemeinde = missinggemeinde.reset_index(drop=True)
@@ -55,7 +80,14 @@ def lost_gemeinden_gdf(gdf_gemeinde_oels):
     return missinggemeinde
 
 def add_remaining_gemeinden(base_polygon_gdf, missinggemeinde, oels_gemeinde_in_zula):
-    """Adds the missing 14 gemeinden to the oels_gemeinde_in_zula gdf."""
+    """
+    Adds the missing 14 gemeinden to the oels_gemeinde_in_zula gdf.
+
+    :param base_polygon_gdf: gdf with all zulassungsbezirke in germany
+    :param missinggemeinde: gdf with the missing gemeinden
+    :param oels_gemeinde_in_zula: gdf with the gemeinden in their zulassungsbezirke (some are missing)
+    :return: gdf with all gemeinden in germany and their ladestationen infrastructure
+    """
     vorpommern = missinggemeinde[missinggemeinde['ARS'] == '13']
     vorpommern = vorpommern.drop([8, 13])
     vorpommern['NAME_Zula'] = base_polygon_gdf['NAME'].loc[369]
