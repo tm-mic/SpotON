@@ -8,7 +8,12 @@ import numpy as np
 
 
 def slim_osm_data(Path: str):
-    """Deletes unnecessary columns from the original osm GeoDataFrames."""
+    """
+    Deletes unnecessary columns from the original osm GeoDataFrames.
+
+    :param Path: path to original osm data
+    :return: gdf with three columns [id, value, geometry]
+    """
     source = gpd.read_file(Path,encoding='utf-8')
     source = source[['id', 'geometry']]
     source.insert(1, "value", np.nan, True)
