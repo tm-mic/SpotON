@@ -2,6 +2,8 @@ from import_funcs import obtain_aoi_polygon as op
 from import_funcs import read_shp
 from IandO import json_utility as ju
 import geopandas as gpd
+import matplotlib.pyplot as plt
+from shapely.geometry import MultiPolygon, Polygon
 
 
 # TODO: add redo possibility through listener
@@ -35,8 +37,6 @@ def choose_aoi_shp(aoi_path_dict: dict):
 def select_aoi(aoi_shp_path):
     """
     From shapefile select an entry from the "GEN" column.
-    # TODO: Implement handling of "NAME" instead of "GEN" column in KFZ250.shp
-
     :param aoi_shp_path: Shapefile path.
     :return: Name of selected aoi. Geometry of selected aoi.
     """
@@ -55,7 +55,7 @@ def select_aoi(aoi_shp_path):
                 print("The selection you have made is not valid. Please chose another valid Area of Interest.")
                 continue
             else:
-                aoi_poly = user_aoi.dissolve().explode(index_parts=False).iloc[0]['geometry']
+                aoi_poly = user_aoi.loc[:, 'geometry'].unary_union
                 return user_input, aoi_poly, user_input_aoi_type
         except ValueError:
             print(
@@ -74,3 +74,4 @@ def ui_aoi(shp_dict):
     user_aoi_path = choose_aoi_shp(shp_dict)
     user_selec = select_aoi(user_aoi_path)
     return user_selec[0], user_selec[1], user_selec[2]
+

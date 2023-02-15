@@ -70,7 +70,6 @@
   {
     "Bundesland": "data/VG2500_LAN.shp",
     "Gemeinden": "data/VG5000_GEM.shp",
-    "Landkreis": "data/VG5000_KRS.shp",
     "Zulassungsbezirk": "data/KFZ250.shp"
   },
 
