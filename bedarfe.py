@@ -6,7 +6,6 @@ from pandas import DataFrame
 import random as rnd
 import geopandas as gpd
 
-
 def split_val_by_share(val_in: int, share: float) -> tuple:
     """
     Calcs two values from one with val1 + val2 = 1, if given share value rangeing from 0-1.
@@ -352,7 +351,7 @@ def calc_num_ev_gem(ratios: dict, anzahl_evs_zb: int) -> dict:
 
 def calc_cars_in_interest_area(gemeinde_ladestationen_poly, index_df, interest_area: str, aoi_type: str, ars_dict: dict):
 
-    if aoi_type == 'Gemeinde':
+    if aoi_type == 'Gemeinden':
 
         interest_area_ladestationen_poly = gemeinde_ladestationen_poly.loc[
         gemeinde_ladestationen_poly['NAME_Gemeinde'] == interest_area]
