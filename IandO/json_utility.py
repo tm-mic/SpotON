@@ -15,7 +15,7 @@ def read_json(file_path='config.json') -> object:
     try:
         file = open(file_path)
         return json.load(file, object_hook=lambda d: {int(k)
-                         if k.isdigit() else k: v for k, v in d.items()})
+                                                      if k.isdigit() else k: v for k, v in d.items()})
     except FileNotFoundError:
         print(f"The file {file_path} you are trying to read does not exists at the path given."
               f"Please provide a different path to an existing config file.")
@@ -34,5 +34,16 @@ def read_json_elements(json_obj, file_ident, attr=None):
         return json_obj[file_ident]
     else:
         return json_obj[file_ident][attr]
+
+
+def write_to_json(json_path, data):
+    with open('data.json', 'w', encoding='utf-8') as f:
+        json.dump(data, f, ensure_ascii=False, indent=4)
+
+
+def write_json(json_obj, filepath, data, key, attr):
+    json_obj[key][attr] = data
+    with open(filepath, 'w') as f:
+        json.dump(json_obj, f, ensure_ascii=False, indent=4)
 
 
