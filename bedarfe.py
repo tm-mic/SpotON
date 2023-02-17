@@ -310,12 +310,15 @@ def normalize_list(liste, new_max=1, new_min=0) -> list:
     :param: abs_max: Max val. in scope.
     :return: Series with normalized values between 0-1.
     """
-    abs_max = max(liste)
-    abs_min = min(liste)
+    indexes = []
+    for index in liste:
+        indexes.append(index[3])
+    abs_max = max(indexes)
+    abs_min = min(indexes)
     new_liste = []
     for elem in liste:
-        new_elem = ((elem - abs_min) / (abs_max - abs_min)) * (new_max - new_min) + new_min
-        new_liste.append(new_elem)
+        elem[3] = ((elem[3] - abs_min) / (abs_max - abs_min)) * (new_max - new_min) + new_min
+        new_liste.append(elem)
     return new_liste
 
 

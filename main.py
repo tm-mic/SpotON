@@ -142,7 +142,7 @@ def gem_index(df, haus_df):
     df = bed.add_haushalte_index(df)
     zula_ratio = bed.calc_zula_ratio(df)
     g_index = bed.add_gemeinde_index(df, zula_ratio)
-    g_index['Gemeinde_Index'] = bed.normalize_column(g_index['Gemeinde_Index'])
+    # g_index['Gemeinde_Index'] = bed.normalize_column(g_index['Gemeinde_Index'])
     return g_index
 
 
@@ -334,7 +334,8 @@ print("The amount of EV for each Gemeinde in the interest area has been calculat
 # TODO: Add following segment into writeback-loop
 parking_data = ju.read_json_elements(config_obj, 'parking_values', "filepath")
 parking_areas_of_intr = mpa.parking_areas_in_interest_area(parking_data, interest_area_ladestationen_poly)
-parking_areas_of_intr = mpa.get_ladesaeulen_locations(parking_areas_of_intr)
+parking_areas_of_intr = mpa.get_ladesaeulen_locations(
+    parking_areas_of_intr)
 pts(parking_areas_of_intr, aoi_polygon, interest_area)
 
 print(".html plot for amount of EV for each Gemeinde in the interest area has been created.")
