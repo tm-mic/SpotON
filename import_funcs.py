@@ -170,6 +170,10 @@ def concat_filepath(folderpath: str, aoi: str, ident='', ending='.parquet'):
     return folderpath + aoi + ident + ending
 
 
+def concat_aoi_path(folderpath: str, aoi: str, aoi_type: str, ident='', ending='.parquet'):
+    return folderpath + aoi + ident + "_" + aoi_type + ending
+
+
 def invalid_row_handler(row):
     """
     Called by pyarrow import function

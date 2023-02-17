@@ -32,7 +32,6 @@ index_path = ju.read_json_elements(config_obj, 'results', 'cell_index')
 gdf_path = ju.read_json_elements(config_obj, 'results', 'gdf')
 zensus_conversion = ju.read_json_elements(config_obj, "data_conversion", "Zensus_data")
 data_conversion = ju.read_json_elements(config_obj, "data_conversion", "demographic_data")
-area_shapefile = ju.read_json_elements(config_obj, "shapefile", "Landkreis")
 gem_shapefile = ju.read_json_elements(config_obj, "shapefile", "Gemeinden")
 zensus_file = ju.read_json_elements(config_obj, 'Zensus', "filepath")
 zensus_cols = ju.read_json_elements(config_obj, 'Zensus', "columns")
@@ -206,17 +205,17 @@ for path in file_paths:
 
 totaltimes = timeit.default_timer()
 # check if point ref. for aoi already exists
-if fe.path_exists(ifunc.concat_filepath(point_ref_path, interest_area)) is False:
+if fe.path_exists(ifunc.concat_aoi_path(point_ref_path, interest_area, aoi_type)) is False:
     print("A geo-dataframe with reference points for the aoi is being calculated."
           "This might take a few minutes.")
     area_p_ref = create_point_ref(zensus_file, zensus_cols, interest_area, aoi_polygon, gem_shapefile)
-    area_p_ref.to_parquet(ifunc.concat_filepath(point_ref_path, interest_area, ending='.parquet'))
+    area_p_ref.to_parquet(ifunc.concat_aoi_path(point_ref_path, interest_area, aoi_type, ending='.parquet'))
     print(f"The point reference file has been written to your results folder {point_ref_csv}."
           f"For future runs in the same aoi this step will be skipped.")
 else:
     print(f"\nThe point of reference file of {interest_area} does already exist in {point_ref_path}.\n"
           f"This file is being used for further calculations.")
-    area_p_ref = gpd.read_parquet(ifunc.concat_filepath(point_ref_path, interest_area, ending='.parquet'))
+    area_p_ref = gpd.read_parquet(ifunc.concat_aoi_path(point_ref_path, interest_area, aoi_type, ending='.parquet'))
 
 # if all data does not exist yet write back as parquet
 if fe.path_exists(ifunc.concat_filepath(data_path, 'all_data')) is False:
@@ -234,18 +233,18 @@ else:
     print(f"All demographic data is already in the {data_path} folder. No new data has been imported.")
 
 # merge zensus points and data
-if fe.path_exists(ifunc.concat_filepath(data_path, interest_area)) is False:
+if fe.path_exists(ifunc.concat_aoi_path(data_path, interest_area, aoi_type)) is False:
     aoi_df = pd.read_parquet(ifunc.concat_filepath(data_path, "all_data", ending='.parquet')).convert_dtypes()
     aoi_df = merge_to_gdf(aoi_df, area_p_ref)
     print(f"Zensus data and point reference data have been merged successfully.")
-    aoi_df.to_parquet(ifunc.concat_filepath(data_path, interest_area))
+    aoi_df.to_parquet(ifunc.concat_aoi_path(data_path, interest_area, aoi_type))
 else:
-    aoi_df = gpd.read_parquet(ifunc.concat_filepath(data_path, interest_area))
+    aoi_df = gpd.read_parquet(ifunc.concat_aoi_path(data_path, interest_area, aoi_type))
     print(
         f"The data for this aoi is already in your filesystem at {data_path}. This data is used for further calculations.")
 
 # create index from file
-if fe.path_exists(ifunc.concat_filepath(index_path, interest_area)) is False:
+if fe.path_exists(ifunc.concat_aoi_path(index_path, interest_area, aoi_type)) is False:
     aoi_df["Auspraegung_Code"] = change_col_type(aoi_df, "Auspraegung_Code", 'int8')
     aoi_df["Anzahl"] = change_col_type(aoi_df, "Anzahl", 'int8')
 
@@ -277,14 +276,14 @@ if fe.path_exists(ifunc.concat_filepath(index_path, interest_area)) is False:
     index_df = gem_index(index_df, hau_df)
     print("The Gemeinde-index has been calculated and normalized.")
 
-    index_df.to_parquet(ifunc.concat_filepath(index_path, interest_area))
+    index_df.to_parquet(ifunc.concat_aoi_path(index_path, interest_area, aoi_type))
 else:
-    index_df = gpd.read_parquet(ifunc.concat_filepath(index_path, interest_area))
+    index_df = gpd.read_parquet(ifunc.concat_aoi_path(index_path, interest_area, aoi_type))
 
 print(
     "The Cell indeces have been calculated. Next the amount of cars for each Gemeinde based on the cell indeces will be calculated.")
 
-if fe.path_exists(ifunc.concat_filepath(gdf_path, interest_area)) is False:
+if fe.path_exists(ifunc.concat_aoi_path(gdf_path, interest_area, aoi_type)) is False:
     # TODO: set into write back loop
     # THOMAS part
     kfz_data = ifunc.import_vehicle_registration_by_excel(kfz_data)
@@ -317,20 +316,28 @@ if fe.path_exists(ifunc.concat_filepath(gdf_path, interest_area)) is False:
     interest_area_ladestationen_poly = bed.calc_cars_in_interest_area(gemeinde_ladestationen_poly, index_df,
                                                                       interest_area, aoi_type, ars_dict)
 
-    # TODO: Handle writing of interest_area_ladestationen_poly to parquet
+    # interest_area_ladestationen_poly.to_csv('interest_area_ladestationen_poly.csv',
+    #                                         sep='\t',
+    #                                         encoding='utf-8',
+    #                                         index=False)
 
-#     interest_area_ladestationen_poly.to_parquet(ifunc.concat_filepath(gdf_path, interest_area))
+    # TODO: Adjusting dtype of geometry column of interest_area_ladestationen_poly to handle writing to .parquet
+
+#     interest_area_ladestationen_poly = interest_area_ladestationen_poly.astype('object')
+#     interest_area_ladestationen_poly.to_parquet(ifunc.concat_aoi_path(gdf_path, interest_area, aoi_type))
 #     #
 # else:
-#     interest_area_ladestationen_poly = gpd.read_parquet(ifunc.concat_filepath(gdf_path, interest_area))
+#     interest_area_ladestationen_poly = gpd.read_parquet(ifunc.concat_aoi_path(gdf_path, interest_area, aoi_type))
 
 print("The amount of EV for each Gemeinde in the interest area has been calculated.")
 
-    # TODO: Add following segment into writeback-loop
+# TODO: Add following segment into writeback-loop
 parking_data = ju.read_json_elements(config_obj, 'parking_values', "filepath")
 parking_areas_of_intr = mpa.parking_areas_in_interest_area(parking_data, interest_area_ladestationen_poly)
 parking_areas_of_intr = mpa.get_ladesaeulen_locations(parking_areas_of_intr)
 pts(parking_areas_of_intr, aoi_polygon, interest_area)
+
+print(".html plot for amount of EV for each Gemeinde in the interest area has been created.")
 
 totaltimestop = timeit.default_timer()
 print(totaltimestop - totaltimes)
