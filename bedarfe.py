@@ -184,6 +184,7 @@ def calc_cell_index(gemeinde_group, weight_map, index_columns, interest_area):
         for id, cell in cell_gem_group:
             geo_point, index = sum_cell_index(cell, gem_vals, index_columns)
             index_list.append([id, interest_area, name, index, geo_point])
+    index_list = normalize_list(index_list)
     return index_list
 
 
@@ -298,6 +299,24 @@ def normalize_column(series: pd.Series, new_max=1, new_min=0) -> pd.Series:
     abs_max = series.max()
     abs_min = series.min()
     return series.apply(lambda date: ((date - abs_min) / (abs_max - abs_min)) * (new_max - new_min) + new_min)
+
+
+def normalize_list(liste, new_max=1, new_min=0) -> list:
+    """
+    Casts series data points between 0-1 based on min and max values in series.
+
+    :param: date_to_norm: int or float value to normalize.
+    :param: abs_min: Min val. in scope.
+    :param: abs_max: Max val. in scope.
+    :return: Series with normalized values between 0-1.
+    """
+    abs_max = max(liste)
+    abs_min = min(liste)
+    new_liste = []
+    for elem in liste:
+        new_elem = ((elem - abs_min) / (abs_max - abs_min)) * (new_max - new_min) + new_min
+        new_liste.append(new_elem)
+    return new_liste
 
 
 def sum_gemeinde_idx(df_group: pd.DataFrame, sum_col='Haushalte_Index') -> dict:
