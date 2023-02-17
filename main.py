@@ -130,7 +130,7 @@ def calc_cell_index(df, weight, index_col, aoi):
 
 def gem_index(df, haus_df):
     """
-    Calculates the gemeinde indices based on normalized (0-1) cell indices and the number of households in a cell.
+    Calculates the gemeinde indices based on cell indices and the number of households in a cell.
 
     :param df: df containing the cell indices
     :param haus_df: df containing the number of households
@@ -139,7 +139,6 @@ def gem_index(df, haus_df):
 
     df = df.merge(haus_df, on='Gitter_ID_100m', how='left').dropna(how='any')
     df = slice_df_cols(df, ['Gitter_ID_100m', 'AOI', 'Gemeinde', 'Cell Index', 'Anzahl', 'geometry'])
-    # df['Cell Index'] = bed.normalize_column(df['Cell Index']) # unnecessary ass only gemeinde values need normalization
     df = bed.add_haushalte_index(df)
     zula_ratio = bed.calc_zula_ratio(df)
     g_index = bed.add_gemeinde_index(df, zula_ratio)
