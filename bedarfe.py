@@ -399,6 +399,12 @@ def calc_cars_in_interest_area(gemeinde_ladestationen_poly, index_df, interest_a
         gem_idx = gem['Gemeinde_Index'].iloc[0]
         gem_idx_dict.update({name: gem_idx})
 
+    # TODO: Write into function
+    factor = 1.0 / sum(gem_idx_dict.values())
+
+    for k in gem_idx_dict:
+        gem_idx_dict[k] = gem_idx_dict[k] * factor
+
     car_count = calc_num_ev_gem(gem_idx_dict, anzahl_evs_aoi)
 
     interest_area_ladestationen_poly.insert(10, 'EVGem',
