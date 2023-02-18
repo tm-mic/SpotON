@@ -7,10 +7,12 @@ import random as rnd
 import geopandas as gpd
 import unittest
 
+
 class TestBedarfe(unittest.TestCase):
 
     def test_split_val_by_share(self):
         self.assertEqual(split_val_by_share(1, 0.5))
+
 
 def split_val_by_share(val_in: int, share: float) -> tuple:
     """
@@ -85,7 +87,7 @@ def disaggregate_age_attr(
         result_list.append(group_one)
         result_list.append(group_two)
     result_df = pd.DataFrame(result_list, columns=cols)
-    #TODO: test if loc is necessary here - i think it is an old loc as no group allocation works with -1 as identifier anymore
+    # TODO: test if loc is necessary here - i think it is an old loc as no group allocation works with -1 as identifier anymore
     return result_df.loc[result_df['Auspraegung_Code'] != -1]
 
 
@@ -233,7 +235,8 @@ def grab_any_valid_value(df, col):
     return df[col].dropna().values[0]
 
 
-def inner_merge_df(sum_codes: pd.DataFrame, codes_count: pd.DataFrame, on=['Merkmal', 'Auspraegung_Code']) -> pd.DataFrame:
+def inner_merge_df(sum_codes: pd.DataFrame, codes_count: pd.DataFrame,
+                   on=['Merkmal', 'Auspraegung_Code']) -> pd.DataFrame:
     return sum_codes.merge(codes_count, on=on, how='inner')
 
 
@@ -377,43 +380,8 @@ def calc_num_ev_gem(ratios: dict, anzahl_evs_zb: int) -> dict:
     return ev_dict
 
 
-def calc_cars_in_interest_area(gemeinde_ladestationen_poly, index_df, interest_area: str, aoi_type: str, ars_dict: dict):
-
-    if aoi_type == 'Gemeinden':
-
-        interest_area_ladestationen_poly = gemeinde_ladestationen_poly.loc[
-        gemeinde_ladestationen_poly['NAME_Gemeinde'] == interest_area]
-        anzahl_evs_aoi = interest_area_ladestationen_poly['EVIng'].iloc[0]
-
-    elif aoi_type == 'Zulassungsbezirk':
-
-        interest_area = interest_area.upper()
-        interest_area = interest_area.replace('Ü', 'UE')
-        interest_area = interest_area.replace('Ä', 'AE')
-        interest_area = interest_area.replace('Ö', 'OE')
-
-        interest_area_ladestationen_poly = gemeinde_ladestationen_poly.loc[
-        gemeinde_ladestationen_poly['NAME_Zula'] == interest_area]
-        anzahl_evs_aoi = interest_area_ladestationen_poly['EVIng'].iloc[0]
-
-    elif aoi_type == 'Bundesland':
-
-        interest_area = interest_area.upper()
-        interest_area = interest_area.replace('Ü', 'UE')
-        interest_area = interest_area.replace('Ä', 'AE')
-        interest_area = interest_area.replace('Ö', 'OE')
-
-        ars_key = ars_dict.get(interest_area)
-        ars_key = int(ars_key)
-        gemeinde_ladestationen_poly = gemeinde_ladestationen_poly.astype({'ARS': 'int32'})
-        interest_area_ladestationen_poly = gemeinde_ladestationen_poly.loc[
-        gemeinde_ladestationen_poly['ARS'] == ars_key]
-
-        aoi_group = interest_area_ladestationen_poly.groupby(by='NAME_Zula').first()
-        anzahl_evs_aoi = aoi_group['EVIng'].sum()
-
-    # TODO: Group by Gemeinde, take first Gemeinde_index and give EVIng
-
+def calc_cars_in_interest_area(gemeinde_ladestationen_poly, index_df, interest_area: str, aoi_type: str,
+                               ars_dict: dict):
     gem_idx_dict = {}
     gem_groups = index_df.groupby(by='Gemeinde')
 
@@ -427,10 +395,64 @@ def calc_cars_in_interest_area(gemeinde_ladestationen_poly, index_df, interest_a
     for k in gem_idx_dict:
         gem_idx_dict[k] = gem_idx_dict[k] * factor
 
-    car_count = calc_num_ev_gem(gem_idx_dict, anzahl_evs_aoi)
+    if aoi_type == 'Gemeinden':
+
+        interest_area_ladestationen_poly = gemeinde_ladestationen_poly.loc[
+            gemeinde_ladestationen_poly['NAME_Gemeinde'] == interest_area]
+
+        anzahl_evs_aoi = interest_area_ladestationen_poly['EVIng'].iloc[0]
+        aoi_ev_gem = calc_num_ev_gem(gem_idx_dict, anzahl_evs_aoi)
+
+    elif aoi_type == 'Zulassungsbezirk':
+
+        interest_area = interest_area.upper()
+        interest_area = interest_area.replace('Ü', 'UE')
+        interest_area = interest_area.replace('Ä', 'AE')
+        interest_area = interest_area.replace('Ö', 'OE')
+
+        interest_area_ladestationen_poly = gemeinde_ladestationen_poly.loc[
+            gemeinde_ladestationen_poly['NAME_Zula'] == interest_area]
+
+        anzahl_evs_aoi = interest_area_ladestationen_poly['EVIng'].iloc[0]
+        aoi_ev_gem = calc_num_ev_gem(gem_idx_dict, anzahl_evs_aoi)
+
+    elif aoi_type == 'Bundesland':
+
+        interest_area = interest_area.upper()
+        interest_area = interest_area.replace('Ü', 'UE')
+        interest_area = interest_area.replace('Ä', 'AE')
+        interest_area = interest_area.replace('Ö', 'OE')
+
+        ars_key = ars_dict.get(interest_area)
+        ars_key = int(ars_key)
+        gemeinde_ladestationen_poly = gemeinde_ladestationen_poly.astype({'ARS': 'int32'})
+        interest_area_ladestationen_poly = gemeinde_ladestationen_poly.loc[
+            gemeinde_ladestationen_poly['ARS'] == ars_key]
+
+        aoi_group = interest_area_ladestationen_poly.groupby(by='NAME_Zula')
+        aoi_ev_gem = {}
+
+        # TODO: Refactor
+
+        for zula in aoi_group:
+
+            ev_zula = zula[1]['EVIng'].iloc[0]
+            zula_gemeinden = zula[1]['NAME_Gemeinde']
+            zula_gem_idx_dict = {gem: gem_idx_dict.get(gem, None) for gem in zula_gemeinden}
+
+            # TODO: Normalization in zula_gem_idx_dict
+            factor = 1.0 / sum(filter(None, zula_gem_idx_dict.values()))
+
+            for gem in zula_gem_idx_dict:
+                gem_val = zula_gem_idx_dict.get(gem)
+                if gem_val is None:
+                    aoi_ev_gem.update({gem: 0})
+                else:
+                    gem_val = gem_val * factor * ev_zula
+                    aoi_ev_gem.update({gem: gem_val})
 
     interest_area_ladestationen_poly.insert(10, 'EVGem',
-                                            interest_area_ladestationen_poly['NAME_Gemeinde'].map(car_count))
+                                            interest_area_ladestationen_poly['NAME_Gemeinde'].map(aoi_ev_gem))
 
     interest_area_ladestationen_poly.insert(11, 'Bedarf Ladepunkte',
                                             ((interest_area_ladestationen_poly['EVGem'] / 11) -
