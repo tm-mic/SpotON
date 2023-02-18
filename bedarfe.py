@@ -5,12 +5,7 @@ import pandas as pd
 from pandas import DataFrame
 import random as rnd
 import geopandas as gpd
-import unittest
 
-class TestBedarfe(unittest.TestCase):
-
-    def test_split_val_by_share(self):
-        self.assertEqual(split_val_by_share(1, 0.5))
 
 def split_val_by_share(val_in: int, share: float) -> tuple:
     """
@@ -412,22 +407,10 @@ def calc_cars_in_interest_area(gemeinde_ladestationen_poly, index_df, interest_a
         aoi_group = interest_area_ladestationen_poly.groupby(by='NAME_Zula').first()
         anzahl_evs_aoi = aoi_group['EVIng'].sum()
 
-    # TODO: Group by Gemeinde, take first Gemeinde_index and give EVIng
+    # TODO: Only works for single Gemeinden!! Adapt for Zulassungsbezirke and Bundesland
 
-    gem_idx_dict = {}
-    gem_groups = index_df.groupby(by='Gemeinde')
-
-    for name, gem in gem_groups:
-        gem_idx = gem['Gemeinde_Index'].iloc[0]
-        gem_idx_dict.update({name: gem_idx})
-
-    # TODO: Write into function
-    factor = 1.0 / sum(gem_idx_dict.values())
-
-    for k in gem_idx_dict:
-        gem_idx_dict[k] = gem_idx_dict[k] * factor
-
-    car_count = calc_num_ev_gem(gem_idx_dict, anzahl_evs_aoi)
+    ratios = calc_zula_ratio(index_df)
+    car_count = calc_num_ev_gem(ratios, anzahl_evs_aoi)
 
     interest_area_ladestationen_poly.insert(10, 'EVGem',
                                             interest_area_ladestationen_poly['NAME_Gemeinde'].map(car_count))
