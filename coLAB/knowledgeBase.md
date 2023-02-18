@@ -547,5 +547,20 @@ Different methods are possible, all using weights and distance to interpolate be
 - IDW - inverse distance weighting
 - KDE - kernel density estimation
 
+# Git trouble
 
+## Merge conflicts
+- fix conflicts in mentioned files and commit
+- otherwise
+  - Find the commit ID of the version of the file you want to revert to
+  - Find the path to the file you want to revert from the working directory
+  - In the terminal, change directories to the working directory
+  - Type ``git checkout [commit ID] -- path/to/file``
+  - In most cases you want to checkout to the commit before the most recent ones. <br> So the command should be ``git checkout [commit ID]~1 -- path/to/file``
+  - ``~1`` here is reference to the commit's first parent
+  - Commit your changes
+  - Detailed information at: [dev.to](https://dev.to/lofiandcode/git-and-github-how-to-revert-a-single-file-dha)
 
+## Merge two branches outside of main
+- Checkout into branch you wish to merge *into*
+- ``git merge origin/[other branch]``
