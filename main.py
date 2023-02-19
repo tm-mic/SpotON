@@ -27,6 +27,7 @@ warnings.simplefilter(action='ignore', category=FutureWarning)
 config_obj = ju.read_json("IandO/config.json")
 shp_config = config_obj.get('shapefile')
 point_ref_path = ju.read_json_elements(config_obj, 'results', 'point_ref')
+html = ju.read_json_elements(config_obj, 'results', 'html')
 data_path = ju.read_json_elements(config_obj, 'results', 'data')
 index_path = ju.read_json_elements(config_obj, 'results', 'cell_index')
 gdf_path = ju.read_json_elements(config_obj, 'results', 'gdf')
@@ -143,13 +144,12 @@ def gem_index(df, haus_df):
     df = bed.add_haushalte_index(df)
     zula_ratio = bed.calc_zula_ratio(df)
     g_index = bed.add_gemeinde_index(df, zula_ratio)
-    # g_index['Gemeinde_Index'] = bed.normalize_column(g_index['Gemeinde_Index'])
     return g_index
 
 
 def read_data_from_parquet(file, delim=';',
                            cols=['Gitter_ID_100m', 'Gitter_ID_100m_neu', 'Merkmal', 'Auspraegung_Code',
-                                    'Auspraegung_Text', 'Anzahl', 'Anzahl_q']):
+                                 'Auspraegung_Text', 'Anzahl', 'Anzahl_q']):
     read_opt = csv.ReadOptions(use_threads=True, column_names=cols)
     parse_options = csv.ParseOptions(delimiter=delim, invalid_row_handler=ifunc.invalid_row_handler)
     convert = csv.ConvertOptions(include_columns=data_columns)
@@ -159,8 +159,9 @@ def read_data_from_parquet(file, delim=';',
     except FileNotFoundError:
         i = 0
         while i < 5:
-            print(f"The .parquet file {file} you are trying to read could not be found. Please check your data folder for {file}."
-                  f"After adding the data file restart the program.")
+            print(
+                f"The .parquet file {file} you are trying to read could not be found. Please check your data folder for {file}."
+                f"After adding the data file restart the program.")
             raise FileNotFoundError
 
 
@@ -193,10 +194,11 @@ def shp_unique_names(shp):
     shp = liz.rename_names_of_some_cities(shp)
     return shp.to_file('data/KFZ250_new.shp', encoding='utf-8')
 
+
 # overwrite zula shapefile to shp with unique names
 if fe.path_exists('data/KFZ250_new.shp') is False:
     kfz_shapefile = shp_unique_names(kfz_shapefile)
-    ju.write_json(config_obj,'IandO/config.json','data/KFZ250_new.shp','shapefile','Zulassungsbezirk')
+    ju.write_json(config_obj, 'IandO/config.json', 'data/KFZ250_new.shp', 'shapefile', 'Zulassungsbezirk')
     kfz_shapefile = ju.read_json_elements(config_obj, "shapefile", "Zulassungsbezirk")
 else:
     kfz_shapefile = ju.read_json_elements(config_obj, "shapefile", "Zulassungsbezirk")
@@ -210,7 +212,7 @@ if __name__ == "__main__":
     aoi_type = u_input[2]
 
     # setup result folders
-    folders = [point_ref_path, data_path, index_path, gdf_csv]
+    folders = [point_ref_path, data_path, index_path, gdf_csv, html]
     for folder in folders:
         fe.setup_folders(folder)
 
@@ -321,7 +323,8 @@ if __name__ == "__main__":
 
         missinggemeinde = og.lost_gemeinden_gdf(ladesaeulen_in_gemeinde_gdf)
 
-        oels_gemeinde_in_zula = og.add_remaining_gemeinden(kfz_data_in_shapefile, missinggemeinde, oels_gemeinde_in_zula)
+        oels_gemeinde_in_zula = og.add_remaining_gemeinden(kfz_data_in_shapefile, missinggemeinde,
+                                                           oels_gemeinde_in_zula)
 
         gemeinde_ladestationen_poly = og.set_geometry_to_gemeinde_poly(gemeinden_polygon_gdf, oels_gemeinde_in_zula)
 
@@ -345,12 +348,14 @@ if __name__ == "__main__":
 
     print("The amount of EV for each Gemeinde in the interest area has been calculated.")
 
-        # TODO: Add following segment into writeback-loop
+    # TODO: Add following segment into writeback-loop
     parking_data = ju.read_json_elements(config_obj, 'parking_values', "filepath")
     parking_areas_of_intr = mpa.parking_areas_in_interest_area(parking_data, interest_area_ladestationen_poly)
     parking_areas_of_intr = mpa.get_ladesaeulen_locations(
         parking_areas_of_intr)
     pts(parking_areas_of_intr, aoi_polygon, interest_area)
+
+    print(".html plot for amount of EV for each Gemeinde in the interest area has been created.")
 
     totaltimestop = timeit.default_timer()
     print(totaltimestop - totaltimes)
