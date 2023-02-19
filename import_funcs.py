@@ -141,12 +141,11 @@ def import_charging_pole_register(filepath: str):
     return df
 
 
-def read_df(path: str, cols, sep=';'): #TODO: basically same as read data from parquet. Union.
+def read_df(path: str, cols, sep=';'):
     sep = sep
     read_options = csv.ReadOptions(autogenerate_column_names=False, use_threads=True)
     parse_options = csv.ParseOptions(delimiter=sep, invalid_row_handler=invalid_row_handler)
     convert = csv.ConvertOptions(include_columns=cols)
-    # TODO: optimization: value error when option string_to_bool and use_multithread is passed to_pandas()
     try:
         return csv.read_csv(path, read_options, parse_options).to_pandas()
     except FileNotFoundError:
