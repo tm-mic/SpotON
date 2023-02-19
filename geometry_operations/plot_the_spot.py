@@ -7,7 +7,7 @@ import geopandas as gpd
 from folium.plugins import MarkerCluster
 
 
-def plot_folium_map_from_GeoDataFrames(parking_areas_of_intr, aoi_polygon, interest_area: str):
+def plot_folium_map_from_GeoDataFrames(parking_areas_of_intr, aoi_polygon, interest_area: str, aoi_type: str):
     """
     Generates a folium html file with area of interest layer and all parking areas which
     are of interest for placing new ladesaeulen. The map is centered on the aoi_polygon.
@@ -61,7 +61,7 @@ def plot_folium_map_from_GeoDataFrames(parking_areas_of_intr, aoi_polygon, inter
 
     folium.LayerControl().add_to(folium_map)
 
-    interest_area = interest_area+".html"
+    interest_area = "data/results/html/" + interest_area + "_" + aoi_type +".html"
     folium_map.save(interest_area)
     return 0
 
