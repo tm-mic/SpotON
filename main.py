@@ -1,19 +1,12 @@
 from pyarrow import csv
 import warnings
-import timeit
 import geopandas as gpd
 import pandas as pd
 import IandO.json_utility as ju
 import bedarfe as bed
 import import_funcs as ifunc
-from geometry_operations.coord_to_polygon import plot_geodataframe
-from IandO import user_input as ui
-import geometry_operations.coord_to_polygon as cop
-from normalize_index_zero_one import normalize_column as normalize
 from IandO import file_exists as fe
 import pyarrow as pa
-import pd_display_options
-from matplotlib import pyplot as plt
 from geometry_operations import ladestation_in_zulassungsbezirk as liz
 from geometry_operations.coord_to_polygon import load_gemeinde_polygon_to_gdf as lgp
 from geometry_operations.coord_to_polygon import ladestationen_to_gdf as lsg
@@ -140,7 +133,6 @@ def gem_index(df, haus_df):
 
     df = df.merge(haus_df, on='Gitter_ID_100m', how='left').dropna(how='any')
     df = slice_df_cols(df, ['Gitter_ID_100m', 'AOI', 'Gemeinde', 'Cell Index', 'Anzahl', 'geometry'])
-    # df['Cell Index'] = bed.normalize_column(df['Cell Index']) # unnecessary ass only gemeinde values need normalization
     df = bed.add_haushalte_index(df)
     zula_ratio = bed.calc_zula_ratio(df)
     g_index = bed.add_gemeinde_index(df, zula_ratio)
@@ -222,7 +214,6 @@ if __name__ == "__main__":
     for path in file_paths:
         fe.files_exists(path)
 
-    totaltimes = timeit.default_timer()
     # check if point ref. for aoi already exists
     if fe.path_exists(ifunc.concat_aoi_path(point_ref_path, interest_area, aoi_type)) is False:
         print("A geo-dataframe with reference points for the aoi is being calculated."
@@ -271,7 +262,6 @@ if __name__ == "__main__":
         aoi_df = disaggr_age_df(aoi_df, distro_val=[0.40, 0.60])
         print(f'Age groups have been disaggregated.')
 
-        # TODO: user warning to use loc instead of df[] notation -> somewhere in subroutine.
         # remap codes based on mapping dict
         aoi_df = bed.remap_groups(aoi_df, attr_mapping)
         print(f'Groups have been remapped to match config specification.')
@@ -303,21 +293,18 @@ if __name__ == "__main__":
         "The Cell indeces have been calculated. Next the amount of cars for each Gemeinde based on the cell indeces will be calculated.")
 
     if fe.path_exists(ifunc.concat_aoi_path(gdf_path, interest_area, aoi_type)) is False:
-        # TODO: set into write back loop
-        # THOMAS part
+
         kfz_data = ifunc.import_vehicle_registration_by_excel(kfz_data)
         kfz_data = liz.renaming_some_zulassungsbezirke(kfz_data)
         kfz_shp_new = gpd.read_file(kfz_shapefile, encoding='utf-8')
         kfz_data_in_shapefile = liz.cars_with_zulassungsbezirk_polygon_gdf(kfz_data, kfz_shp_new)
         gemeinden_polygon_gdf = lgp(gem_shapefile)
         ladestationen_gdf = lsg(ladestationen_data)
-        # TODO: Get rid of "None" column in ladestationen_gdf
 
         ladesaeulen_in_gemeinde_gdf = og.oels_in_gemeinde(gemeinden_polygon_gdf, ladestationen_gdf)
 
         ladesaeulen_in_gemeinde_gdf = og.add_lp_to_gdf_gemeinde_oels(ladestationen_gdf, gemeinden_polygon_gdf,
                                                                      ladesaeulen_in_gemeinde_gdf)
-        # TODO: Refactoring
 
         oels_gemeinde_in_zula = og.oels_of_gemeinde_in_zula(ladesaeulen_in_gemeinde_gdf, kfz_data_in_shapefile)
 
@@ -333,36 +320,21 @@ if __name__ == "__main__":
         interest_area_ladestationen_poly = bed.calc_cars_in_interest_area(gemeinde_ladestationen_poly, index_df,
                                                                           interest_area, aoi_type, ars_dict)
 
-        # interest_area_ladestationen_poly.to_csv('interest_area_ladestationen_poly.csv',
-        #                                         sep='\t',
-        #                                         encoding='utf-8',
-        #                                         index=False)
-
-        # TODO: Adjusting dtype of geometry column of interest_area_ladestationen_poly to handle writing to .parquet
-
-    #     interest_area_ladestationen_poly = interest_area_ladestationen_poly.astype('object')
-    #     interest_area_ladestationen_poly.to_parquet(ifunc.concat_aoi_path(gdf_path, interest_area, aoi_type))
-    #     #
-    # else:
-    #     interest_area_ladestationen_poly = gpd.read_parquet(ifunc.concat_aoi_path(gdf_path, interest_area, aoi_type))
-
     print("The amount of EV for each Gemeinde in the interest area has been calculated.")
 
-    # TODO: Add following segment into writeback-loop
     parking_data = ju.read_json_elements(config_obj, 'parking_values', "filepath")
     parking_areas_of_intr = mpa.parking_areas_in_interest_area(parking_data, interest_area_ladestationen_poly)
 
     if parking_areas_of_intr.empty:
-        print('In the area of interest the demand for charging station is covered.'
-              'Therefore no csv and no html file were calculated. End of program.')
+        print('In the area of interest the demand for charging station is covered.\n'
+              'Therefore no csv and no html file were calculated.\n'
+              'End of program.')
     else:
         parking_areas_of_intr = mpa.get_ladesaeulen_locations(parking_areas_of_intr)
         parking_areas_of_intr_df = pd.DataFrame(parking_areas_of_intr)
         parking_areas_of_intr_df.to_csv(gdf_csv + interest_area + "_" + aoi_type + ".csv")
         pts(parking_areas_of_intr, aoi_polygon, interest_area, aoi_type)
-        print(".csv and .html plot for amount of parking areas with chargings stations "
-              "for each Gemeinde in the interest area has been created. "
-              "You will find them at /data/results/gdf and /data/results/html.")
-
-    totaltimestop = timeit.default_timer()
-    print(totaltimestop - totaltimes)
+        print(".csv and .html plot for amount of parking areas with chargings stations\n"
+              "for each Gemeinde in the interest area has been created.\n"
+              "You will find them at /data/results/gdf and /data/results/html.\n"
+              "End of program.")
