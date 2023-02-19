@@ -2,11 +2,9 @@ from import_funcs import obtain_aoi_polygon as op
 from import_funcs import read_shp
 from IandO import json_utility as ju
 import geopandas as gpd
-import matplotlib.pyplot as plt
-from shapely.geometry import MultiPolygon, Polygon
 
 
-# TODO: add redo possibility through listener
+
 
 def choose_aoi_shp(aoi_path_dict: dict):
     """
@@ -19,7 +17,6 @@ def choose_aoi_shp(aoi_path_dict: dict):
     print(f"please choose one of the following aoi: {aoi_path_dict.keys()}")
     while True:
         try:
-            # TODO: Extract user input to interest_area_ladestationen_poly
             global user_input_aoi_type
             user_input_aoi_type = str(input(f"Which aoi is interesting for you?"))
             shp_selec = aoi_path_dict.get(user_input_aoi_type)
