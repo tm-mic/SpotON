@@ -1,0 +1,8 @@
+1. leisure: fitness_centre, park, pitch, sports_centre, water_park, sports_hall
+2. landuse1: commercial, industrial
+3. landuse2: allotments, cemetery
+4. food:cafe, restaurant, fast_food
+5. health: place_of_worship, hospital, dentist, doctors
+6. retail: retail
+7. appres1: appartments levels:2-5, residential levels:3-5
+8. appres2: appartments levels:6-13, residential levels:6-8
