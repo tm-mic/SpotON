@@ -201,155 +201,156 @@ if fe.path_exists('data/KFZ250_new.shp') is False:
 else:
     kfz_shapefile = ju.read_json_elements(config_obj, "shapefile", "Zulassungsbezirk")
 
+if __name__ == "__main__":
 
-# ask user for aoi
-u_input = ui(shp_config)
-interest_area = u_input[0]
-aoi_polygon = u_input[1]
-aoi_type = u_input[2]
+    # ask user for aoi
+    u_input = ui(shp_config)
+    interest_area = u_input[0]
+    aoi_polygon = u_input[1]
+    aoi_type = u_input[2]
 
-# setup result folders
-folders = [point_ref_path, data_path, index_path, gdf_csv]
-for folder in folders:
-    fe.setup_folders(folder)
+    # setup result folders
+    folders = [point_ref_path, data_path, index_path, gdf_csv]
+    for folder in folders:
+        fe.setup_folders(folder)
 
-# check if files corresponding to config files paths exist in folder
-file_paths = [zensus_file, bev_data, geb_data, hau_data, fam_data, kfz_data, ladestationen_data]
-c = 0
-for path in file_paths:
-    fe.files_exists(path)
+    # check if files corresponding to config files paths exist in folder
+    file_paths = [zensus_file, bev_data, geb_data, hau_data, fam_data, kfz_data, ladestationen_data]
+    c = 0
+    for path in file_paths:
+        fe.files_exists(path)
 
-totaltimes = timeit.default_timer()
-# check if point ref. for aoi already exists
-if fe.path_exists(ifunc.concat_aoi_path(point_ref_path, interest_area, aoi_type)) is False:
-    print("A geo-dataframe with reference points for the aoi is being calculated."
-          "This might take a few minutes.")
-    area_p_ref = create_point_ref(zensus_file, zensus_cols, interest_area, aoi_polygon, gem_shapefile)
-    area_p_ref.to_parquet(ifunc.concat_aoi_path(point_ref_path, interest_area, aoi_type, ending='.parquet'))
-    print(f"The point reference file has been written to your results folder {point_ref_csv}."
-          f"For future runs in the same aoi this step will be skipped.")
-else:
-    print(f"\nThe point of reference file of {interest_area} does already exist in {point_ref_path}.\n"
-          f"This file is being used for further calculations.")
-    area_p_ref = gpd.read_parquet(ifunc.concat_aoi_path(point_ref_path, interest_area, aoi_type, ending='.parquet'))
+    totaltimes = timeit.default_timer()
+    # check if point ref. for aoi already exists
+    if fe.path_exists(ifunc.concat_aoi_path(point_ref_path, interest_area, aoi_type)) is False:
+        print("A geo-dataframe with reference points for the aoi is being calculated."
+              "This might take a few minutes.")
+        area_p_ref = create_point_ref(zensus_file, zensus_cols, interest_area, aoi_polygon, gem_shapefile)
+        area_p_ref.to_parquet(ifunc.concat_aoi_path(point_ref_path, interest_area, aoi_type, ending='.parquet'))
+        print(f"The point reference file has been written to your results folder {point_ref_csv}."
+              f"For future runs in the same aoi this step will be skipped.")
+    else:
+        print(f"\nThe point of reference file of {interest_area} does already exist in {point_ref_path}.\n"
+              f"This file is being used for further calculations.")
+        area_p_ref = gpd.read_parquet(ifunc.concat_aoi_path(point_ref_path, interest_area, aoi_type, ending='.parquet'))
 
-# if all data does not exist yet write back as parquet
-if fe.path_exists(ifunc.concat_filepath(data_path, 'all_data')) is False:
-    bev = read_data_from_parquet(bev_data, delim=';')
-    fam = read_data_from_parquet(fam_data, delim=',')
-    geb = read_data_from_parquet(geb_data, delim=',')
-    data = pa.concat_tables([bev, fam, geb])
-    pa.parquet.write_table(data, ifunc.concat_filepath(data_path, 'all_data', ending='.parquet'))
+    # if all data does not exist yet write back as parquet
+    if fe.path_exists(ifunc.concat_filepath(data_path, 'all_data')) is False:
+        bev = read_data_from_parquet(bev_data, delim=';')
+        fam = read_data_from_parquet(fam_data, delim=',')
+        geb = read_data_from_parquet(geb_data, delim=',')
+        data = pa.concat_tables([bev, fam, geb])
+        pa.parquet.write_table(data, ifunc.concat_filepath(data_path, 'all_data', ending='.parquet'))
 
-    # Haushalte data is read and written seperatly as it is merged to the dataframe at a later point in time.
-    hau = read_data_from_parquet(hau_data, delim=',')
-    pa.parquet.write_table(hau, ifunc.concat_filepath(data_path, 'all_data', ident='_haushalte', ending='.parquet'))
-    print(f"The point reference data has been written to {data_path}.")
-else:
-    print(f"All demographic data is already in the {data_path} folder. No new data has been imported.")
+        # Haushalte data is read and written seperatly as it is merged to the dataframe at a later point in time.
+        hau = read_data_from_parquet(hau_data, delim=',')
+        pa.parquet.write_table(hau, ifunc.concat_filepath(data_path, 'all_data', ident='_haushalte', ending='.parquet'))
+        print(f"The point reference data has been written to {data_path}.")
+    else:
+        print(f"All demographic data is already in the {data_path} folder. No new data has been imported.")
 
-# merge zensus points and data
-if fe.path_exists(ifunc.concat_aoi_path(data_path, interest_area, aoi_type)) is False:
-    aoi_df = pd.read_parquet(ifunc.concat_filepath(data_path, "all_data", ending='.parquet')).convert_dtypes()
-    aoi_df = merge_to_gdf(aoi_df, area_p_ref)
-    print(f"Zensus data and point reference data have been merged successfully.")
-    aoi_df.to_parquet(ifunc.concat_aoi_path(data_path, interest_area, aoi_type))
-else:
-    aoi_df = gpd.read_parquet(ifunc.concat_aoi_path(data_path, interest_area, aoi_type))
+    # merge zensus points and data
+    if fe.path_exists(ifunc.concat_aoi_path(data_path, interest_area, aoi_type)) is False:
+        aoi_df = pd.read_parquet(ifunc.concat_filepath(data_path, "all_data", ending='.parquet')).convert_dtypes()
+        aoi_df = merge_to_gdf(aoi_df, area_p_ref)
+        print(f"Zensus data and point reference data have been merged successfully.")
+        aoi_df.to_parquet(ifunc.concat_aoi_path(data_path, interest_area, aoi_type))
+    else:
+        aoi_df = gpd.read_parquet(ifunc.concat_aoi_path(data_path, interest_area, aoi_type))
+        print(
+            f"The data for this aoi is already in your filesystem at {data_path}. This data is used for further calculations.")
+
+    # create index from file
+    if fe.path_exists(ifunc.concat_aoi_path(index_path, interest_area, aoi_type)) is False:
+        aoi_df["Auspraegung_Code"] = change_col_type(aoi_df, "Auspraegung_Code", 'int8')
+        aoi_df["Anzahl"] = change_col_type(aoi_df, "Anzahl", 'int8')
+
+        # disaggregate ageD
+        aoi_df = disaggr_age_df(aoi_df, distro_val=[0.40, 0.60])
+        print(f'Age groups have been disaggregated.')
+
+        # TODO: user warning to use loc instead of df[] notation -> somewhere in subroutine.
+        # remap codes based on mapping dict
+        aoi_df = bed.remap_groups(aoi_df, attr_mapping)
+        print(f'Groups have been remapped to match config specification.')
+
+        # calc the percentwise ratio for each merkmal ausprägung
+        aoi_df['Attr_to_total'] = calc_attr_max_ratios(aoi_df)
+        print(f'Ratio of attribute code counts to total observations has been calculated.')
+
+        # multiply Attr_to_total with weight Mapping
+        aoi_df = bed.mult_col_dict(aoi_df, weight_map, new_col='Attr Index', prdne='Attr_to_total',
+                                   prdtwo='Auspraegung_Code',
+                                   cond='Merkmal')
+        print(f'The weight of the attribute code has been calculated.')
+
+        # calculate gemeinde fill values
+        index_df = calc_cell_index(aoi_df, weight_map, index_columns, interest_area)
+        print("The index for each cell in the aoi has been calculated.")
+
+        # calc ratio based on haushalte and normalize
+        hau_df = pd.read_parquet(ifunc.concat_filepath(data_path, 'all_data', ident='_haushalte', ending='.parquet'))
+        index_df = gem_index(index_df, hau_df)
+        print("The Gemeinde-index has been calculated and normalized.")
+
+        index_df.to_parquet(ifunc.concat_aoi_path(index_path, interest_area, aoi_type))
+    else:
+        index_df = gpd.read_parquet(ifunc.concat_aoi_path(index_path, interest_area, aoi_type))
+
     print(
-        f"The data for this aoi is already in your filesystem at {data_path}. This data is used for further calculations.")
+        "The Cell indeces have been calculated. Next the amount of cars for each Gemeinde based on the cell indeces will be calculated.")
 
-# create index from file
-if fe.path_exists(ifunc.concat_aoi_path(index_path, interest_area, aoi_type)) is False:
-    aoi_df["Auspraegung_Code"] = change_col_type(aoi_df, "Auspraegung_Code", 'int8')
-    aoi_df["Anzahl"] = change_col_type(aoi_df, "Anzahl", 'int8')
+    if fe.path_exists(ifunc.concat_aoi_path(gdf_path, interest_area, aoi_type)) is False:
+        # TODO: set into write back loop
+        # THOMAS part
+        kfz_data = ifunc.import_vehicle_registration_by_excel(kfz_data)
+        kfz_data = liz.renaming_some_zulassungsbezirke(kfz_data)
+        kfz_shp_new = gpd.read_file(kfz_shapefile, encoding='utf-8')
+        kfz_data_in_shapefile = liz.cars_with_zulassungsbezirk_polygon_gdf(kfz_data, kfz_shp_new)
+        gemeinden_polygon_gdf = lgp(gem_shapefile)
+        ladestationen_gdf = lsg(ladestationen_data)
+        # TODO: Get rid of "None" column in ladestationen_gdf
 
-    # disaggregate ageD
-    aoi_df = disaggr_age_df(aoi_df, distro_val=[0.40, 0.60])
-    print(f'Age groups have been disaggregated.')
+        ladesaeulen_in_gemeinde_gdf = og.oels_in_gemeinde(gemeinden_polygon_gdf, ladestationen_gdf)
 
-    # TODO: user warning to use loc instead of df[] notation -> somewhere in subroutine.
-    # remap codes based on mapping dict
-    aoi_df = bed.remap_groups(aoi_df, attr_mapping)
-    print(f'Groups have been remapped to match config specification.')
+        ladesaeulen_in_gemeinde_gdf = og.add_lp_to_gdf_gemeinde_oels(ladestationen_gdf, gemeinden_polygon_gdf,
+                                                                     ladesaeulen_in_gemeinde_gdf)
+        # TODO: Refactoring
 
-    # calc the percentwise ratio for each merkmal ausprägung
-    aoi_df['Attr_to_total'] = calc_attr_max_ratios(aoi_df)
-    print(f'Ratio of attribute code counts to total observations has been calculated.')
+        oels_gemeinde_in_zula = og.oels_of_gemeinde_in_zula(ladesaeulen_in_gemeinde_gdf, kfz_data_in_shapefile)
 
-    # multiply Attr_to_total with weight Mapping
-    aoi_df = bed.mult_col_dict(aoi_df, weight_map, new_col='Attr Index', prdne='Attr_to_total',
-                               prdtwo='Auspraegung_Code',
-                               cond='Merkmal')
-    print(f'The weight of the attribute code has been calculated.')
+        missinggemeinde = og.lost_gemeinden_gdf(ladesaeulen_in_gemeinde_gdf)
 
-    # calculate gemeinde fill values
-    index_df = calc_cell_index(aoi_df, weight_map, index_columns, interest_area)
-    print("The index for each cell in the aoi has been calculated.")
+        oels_gemeinde_in_zula = og.add_remaining_gemeinden(kfz_data_in_shapefile, missinggemeinde, oels_gemeinde_in_zula)
 
-    # calc ratio based on haushalte and normalize
-    hau_df = pd.read_parquet(ifunc.concat_filepath(data_path, 'all_data', ident='_haushalte', ending='.parquet'))
-    index_df = gem_index(index_df, hau_df)
-    print("The Gemeinde-index has been calculated and normalized.")
+        gemeinde_ladestationen_poly = og.set_geometry_to_gemeinde_poly(gemeinden_polygon_gdf, oels_gemeinde_in_zula)
 
-    index_df.to_parquet(ifunc.concat_aoi_path(index_path, interest_area, aoi_type))
-else:
-    index_df = gpd.read_parquet(ifunc.concat_aoi_path(index_path, interest_area, aoi_type))
+        gemeinde_ladestationen_poly = og.car_oels_gemeinde_zula_gdf(kfz_data_in_shapefile, gemeinde_ladestationen_poly)
 
-print(
-    "The Cell indeces have been calculated. Next the amount of cars for each Gemeinde based on the cell indeces will be calculated.")
+        interest_area_ladestationen_poly = bed.calc_cars_in_interest_area(gemeinde_ladestationen_poly, index_df,
+                                                                          interest_area, aoi_type, ars_dict)
 
-if fe.path_exists(ifunc.concat_aoi_path(gdf_path, interest_area, aoi_type)) is False:
-    # TODO: set into write back loop
-    # THOMAS part
-    kfz_data = ifunc.import_vehicle_registration_by_excel(kfz_data)
-    kfz_data = liz.renaming_some_zulassungsbezirke(kfz_data)
-    kfz_shp_new = gpd.read_file(kfz_shapefile, encoding='utf-8')
-    kfz_data_in_shapefile = liz.cars_with_zulassungsbezirk_polygon_gdf(kfz_data, kfz_shp_new)
-    gemeinden_polygon_gdf = lgp(gem_shapefile)
-    ladestationen_gdf = lsg(ladestationen_data)
-    # TODO: Get rid of "None" column in ladestationen_gdf
+        # interest_area_ladestationen_poly.to_csv('interest_area_ladestationen_poly.csv',
+        #                                         sep='\t',
+        #                                         encoding='utf-8',
+        #                                         index=False)
 
-    ladesaeulen_in_gemeinde_gdf = og.oels_in_gemeinde(gemeinden_polygon_gdf, ladestationen_gdf)
+        # TODO: Adjusting dtype of geometry column of interest_area_ladestationen_poly to handle writing to .parquet
 
-    ladesaeulen_in_gemeinde_gdf = og.add_lp_to_gdf_gemeinde_oels(ladestationen_gdf, gemeinden_polygon_gdf,
-                                                                 ladesaeulen_in_gemeinde_gdf)
-    # TODO: Refactoring
+    #     interest_area_ladestationen_poly = interest_area_ladestationen_poly.astype('object')
+    #     interest_area_ladestationen_poly.to_parquet(ifunc.concat_aoi_path(gdf_path, interest_area, aoi_type))
+    #     #
+    # else:
+    #     interest_area_ladestationen_poly = gpd.read_parquet(ifunc.concat_aoi_path(gdf_path, interest_area, aoi_type))
 
-    oels_gemeinde_in_zula = og.oels_of_gemeinde_in_zula(ladesaeulen_in_gemeinde_gdf, kfz_data_in_shapefile)
+    print("The amount of EV for each Gemeinde in the interest area has been calculated.")
 
-    missinggemeinde = og.lost_gemeinden_gdf(ladesaeulen_in_gemeinde_gdf)
+        # TODO: Add following segment into writeback-loop
+    parking_data = ju.read_json_elements(config_obj, 'parking_values', "filepath")
+    parking_areas_of_intr = mpa.parking_areas_in_interest_area(parking_data, interest_area_ladestationen_poly)
+    parking_areas_of_intr = mpa.get_ladesaeulen_locations(
+        parking_areas_of_intr)
+    pts(parking_areas_of_intr, aoi_polygon, interest_area)
 
-    oels_gemeinde_in_zula = og.add_remaining_gemeinden(kfz_data_in_shapefile, missinggemeinde, oels_gemeinde_in_zula)
-
-    gemeinde_ladestationen_poly = og.set_geometry_to_gemeinde_poly(gemeinden_polygon_gdf, oels_gemeinde_in_zula)
-
-    gemeinde_ladestationen_poly = og.car_oels_gemeinde_zula_gdf(kfz_data_in_shapefile, gemeinde_ladestationen_poly)
-
-    interest_area_ladestationen_poly = bed.calc_cars_in_interest_area(gemeinde_ladestationen_poly, index_df,
-                                                                      interest_area, aoi_type, ars_dict)
-
-    # interest_area_ladestationen_poly.to_csv('interest_area_ladestationen_poly.csv',
-    #                                         sep='\t',
-    #                                         encoding='utf-8',
-    #                                         index=False)
-
-    # TODO: Adjusting dtype of geometry column of interest_area_ladestationen_poly to handle writing to .parquet
-
-#     interest_area_ladestationen_poly = interest_area_ladestationen_poly.astype('object')
-#     interest_area_ladestationen_poly.to_parquet(ifunc.concat_aoi_path(gdf_path, interest_area, aoi_type))
-#     #
-# else:
-#     interest_area_ladestationen_poly = gpd.read_parquet(ifunc.concat_aoi_path(gdf_path, interest_area, aoi_type))
-
-print("The amount of EV for each Gemeinde in the interest area has been calculated.")
-
-    # TODO: Add following segment into writeback-loop
-parking_data = ju.read_json_elements(config_obj, 'parking_values', "filepath")
-parking_areas_of_intr = mpa.parking_areas_in_interest_area(parking_data, interest_area_ladestationen_poly)
-parking_areas_of_intr = mpa.get_ladesaeulen_locations(
-    parking_areas_of_intr)
-pts(parking_areas_of_intr, aoi_polygon, interest_area)
-
-totaltimestop = timeit.default_timer()
-print(totaltimestop - totaltimes)
+    totaltimestop = timeit.default_timer()
+    print(totaltimestop - totaltimes)

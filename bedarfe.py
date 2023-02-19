@@ -6,12 +6,7 @@ from pandas import DataFrame
 import random as rnd
 import geopandas as gpd
 import unittest
-
-
-class TestBedarfe(unittest.TestCase):
-
-    def test_split_val_by_share(self):
-        self.assertEqual(split_val_by_share(1, 0.5))
+import re
 
 
 def split_val_by_share(val_in: int, share: float) -> tuple:
