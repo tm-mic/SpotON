@@ -27,6 +27,7 @@ warnings.simplefilter(action='ignore', category=FutureWarning)
 config_obj = ju.read_json("IandO/config.json")
 shp_config = config_obj.get('shapefile')
 point_ref_path = ju.read_json_elements(config_obj, 'results', 'point_ref')
+html = ju.read_json_elements(config_obj, 'results', 'html')
 data_path = ju.read_json_elements(config_obj, 'results', 'data')
 index_path = ju.read_json_elements(config_obj, 'results', 'cell_index')
 gdf_path = ju.read_json_elements(config_obj, 'results', 'gdf')
@@ -142,7 +143,7 @@ def gem_index(df, haus_df):
     df = bed.add_haushalte_index(df)
     zula_ratio = bed.calc_zula_ratio(df)
     g_index = bed.add_gemeinde_index(df, zula_ratio)
-    g_index['Gemeinde_Index'] = bed.normalize_column(g_index['Gemeinde_Index'])
+    return g_index
     return g_index
 
 
@@ -193,7 +194,7 @@ aoi_polygon = u_input[1]
 aoi_type = u_input[2]
 
 # setup result folders
-folders = [point_ref_path, data_path, index_path, gdf_csv]
+folders = [point_ref_path, data_path, index_path, gdf_csv, html]
 for folder in folders:
     fe.setup_folders(folder)
 

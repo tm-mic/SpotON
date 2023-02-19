@@ -79,7 +79,8 @@
     "data": "data/results/data/",
     "cell_index": "data/results/cell_index/",
     "point_ref": "data/results/point_ref/",
-    "gdf": "data/results/gdf/"
+    "gdf": "data/results/gdf/",
+    "html": "data/results/html"
   },
 
   "parking_values":
