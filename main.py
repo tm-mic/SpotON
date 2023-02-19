@@ -351,11 +351,18 @@ if __name__ == "__main__":
     # TODO: Add following segment into writeback-loop
     parking_data = ju.read_json_elements(config_obj, 'parking_values', "filepath")
     parking_areas_of_intr = mpa.parking_areas_in_interest_area(parking_data, interest_area_ladestationen_poly)
-    parking_areas_of_intr = mpa.get_ladesaeulen_locations(
-        parking_areas_of_intr)
-    pts(parking_areas_of_intr, aoi_polygon, interest_area)
 
-    print(".html plot for amount of EV for each Gemeinde in the interest area has been created.")
+    if parking_areas_of_intr.empty:
+        print('In the area of interest the demand for charging station is covered.'
+              'Therefore no csv and no html file were calculated. End of program.')
+    else:
+        parking_areas_of_intr = mpa.get_ladesaeulen_locations(parking_areas_of_intr)
+        parking_areas_of_intr_df = pd.DataFrame(parking_areas_of_intr)
+        parking_areas_of_intr_df.to_csv(gdf_csv + interest_area + "_" + aoi_type + ".csv")
+        pts(parking_areas_of_intr, aoi_polygon, interest_area, aoi_type)
+        print(".csv and .html plot for amount of parking areas with chargings stations "
+              "for each Gemeinde in the interest area has been created. "
+              "You will find them at /data/results/gdf and /data/results/html.")
 
     totaltimestop = timeit.default_timer()
     print(totaltimestop - totaltimes)
