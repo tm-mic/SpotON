@@ -5,33 +5,9 @@
 
 
 import pandas as pd
-import geopandas as gpd
 from geometry_operations import coord_to_polygon
 
 
-def create_car_in_zulassungsbezirk_from_csv(Path: str):
-    """
-    From csv several columns are taken and tranformed in a more suitable way for further operations with it.
-    For example empty rows got dropped, NAME column transformed and a column with all electric cars is added in EVing.
-
-    :param Path: path to a csv with car data from KBA
-    :return: dataframe with zulasszngsbezirk name, all cars, hybrid cars, full electric cars
-    and the sum of the two last mentioned
-    """
-    car_in_zula = gpd.GeoDataFrame.from_file(Path)
-    car_in_zula = car_in_zula[['field_3','field_4','field_9','field_10','geometry']]
-    car_in_zula = car_in_zula.rename(columns={'field_3':'NAME','field_4':'Insgesamt_Pkw','field_9':'PIHybrid','field_10':'Elektro_BEV'})
-    car_in_zula = car_in_zula.drop([0,1,2,3,4,5,6,7])
-    empty_row = car_in_zula[car_in_zula['NAME']==''].index
-    car_in_zula.drop(empty_row, inplace=True)
-    car_in_zula['NAME'] = car_in_zula['NAME'].str.slice(7, )
-    car_in_zula = car_in_zula.sort_values('NAME')
-    car_in_zula['Insgesamt_Pkw'] = car_in_zula['Insgesamt_Pkw'].str.replace('.', '').astype('int64')
-    car_in_zula['PIHybrid'] = car_in_zula['PIHybrid'].str.replace('.', '').astype('int64')
-    car_in_zula['Elektro_BEV'] = car_in_zula['Elektro_BEV'].str.replace('.', '').astype('int64')
-    car_in_zula["EVIng"] = car_in_zula['PIHybrid'].add(car_in_zula['Elektro_BEV'])
-    car_in_zula = car_in_zula.iloc[:, [0, 1, 2, 3, 5, 4]]
-    return car_in_zula
 
 def renaming_some_zulassungsbezirke(car_in_zula):
     """
@@ -144,52 +120,4 @@ def cars_with_zulassungsbezirk_polygon_gdf(kfz_data, kfz_shapefile):
     car_and_zula = car_and_zula.set_crs(crs='EPSG:3035')
     return car_and_zula
 
-def ls_in_zulassungsbezirk(Path: str, car_and_zula):
-    """
-    Creates a df with the amount of ladestationen in every zulassungsbezirk.
 
-    :param Path: path to the ladestationen.csv
-    :param car_and_zula: gdf with the geometry and cars in all zulassungbezirke
-    :return: df with ladestationen in zulassungbezirk
-    """
-    ladestationen_gdf = coord_to_polygon.ladestationen_to_gdf(Path)
-    ladestationen_in_zula = car_and_zula.sjoin(ladestationen_gdf)
-    ladestationen_in_zula = ladestationen_in_zula['NAME'].value_counts()
-    df_ladestationen_in_zula = pd.DataFrame(ladestationen_in_zula)
-    df_ladestationen_in_zula = df_ladestationen_in_zula.reset_index()
-    df_ladestationen_in_zula.rename(columns={'index': 'NAME', 'NAME': 'Ladestationen'}, inplace=True)
-    return df_ladestationen_in_zula
-
-def ls_lp_in_zulassungsbezirk(ladestationen_gdf, car_and_zula, df_ladestationen_in_zula):
-    """
-    Adding the amount of landpunkte in every zulassungsbezirk to the df_ladestationen_in_zula.
-
-    :param ladestationen_gdf: gdf with ladestationen in germany
-    :param car_and_zula: cars and geometry of the zulassungsbezirke
-    :param df_ladestationen_in_zula: df with ladestationen in zulassungsbezirk
-    :return: df with ladestationen and ladepunkte in zulassungsbezirk
-    """
-    ls_lp_zula = car_and_zula.sjoin(ladestationen_gdf)
-    ls_lp_zula = ls_lp_zula[['NAME', 'Anzahl Ladepunkte']]
-    ladepunkte = ls_lp_zula.groupby(['NAME']).sum()
-    ladepunkte = pd.DataFrame(ladepunkte)
-    ladepunkte = ladepunkte.reset_index()
-    df_ladestationen_in_zula = df_ladestationen_in_zula.merge(ladepunkte)
-    return df_ladestationen_in_zula
-
-def angebot_bedarf_ladestationen_in_zula(car_and_zula, df_ladestationen_in_zula):
-    """
-    Merges the amount of ladestationen from df with the gdf of zulassungebezirke with all cars.
-    Creates three new columns in which an estimation for the needed expansion of ladestationen are made.
-
-    :param car_and_zula: gdf with cars and geometry of every zulassungsbezirk
-    :param df_ladestationen_in_zula: df with ladestationen and ladepunkte in zulassungsbezirk
-    :return: df with the estimated ladestationen infrastructure for every zulassungsbezirk
-    """
-    ladestationen_amount = car_and_zula.merge(df_ladestationen_in_zula, left_on='NAME', right_on='NAME')
-    ladestationen_amount['Ladepunkteangebot_11zu1'] = ladestationen_amount['EVIng'] / 11
-    ladestationen_amount['Ladepunkteangebot_20zu1'] = ladestationen_amount['EVIng'] / 20
-    ladestationen_amount['Ausbaubedarf'] = (ladestationen_amount['Ladepunkteangebot_11zu1'] + ladestationen_amount[
-        'Ladepunkteangebot_20zu1']) / 2 - ladestationen_amount['Anzahl Ladepunkte']
-    ladestationen_amount = ladestationen_amount.iloc[:, [0, 1, 2, 3, 4, 5, 7, 8, 9, 10, 11, 6]]
-    return ladestationen_amount
