@@ -1,12 +1,11 @@
 # function written by Christian L.
+
 import numpy as np
-import pandas
 import pandas as pd
 from pandas import DataFrame
 import random as rnd
 import geopandas as gpd
-import unittest
-import re
+
 
 
 def split_val_by_share(val_in: int, share: float) -> tuple:
@@ -82,7 +81,6 @@ def disaggregate_age_attr(
         result_list.append(group_one)
         result_list.append(group_two)
     result_df = pd.DataFrame(result_list, columns=cols)
-    # TODO: test if loc is necessary here - i think it is an old loc as no group allocation works with -1 as identifier anymore
     return result_df.loc[result_df['Auspraegung_Code'] != -1]
 
 
@@ -265,7 +263,7 @@ def infer_gem_vals(df_one: pd.DataFrame, df_two: pd.DataFrame, weight_map: dict)
     :param weight_map: weight mapping as specified in config.json
     :return: Geodataframe with a weighted multiplication result of two merged dataframes.
     """
-    # TODO: merge is not necessary for logic of program. Purge to run more efficiently
+
     gem_vals = df_one.merge(df_two, on='Merkmal', how='inner').rename({0: 'Ratio'}, axis=1)
     gem_vals['Gemeinde Fill Values'] = gem_vals['Calc Distro Attr/Cell'] * gem_vals['Ratio']
     gem_vals = mult_col_dict(gem_vals, weight_map, new_col='Attr Index', prdne='Gemeinde Fill Values',
@@ -283,20 +281,6 @@ def group_and_sum_code_counts(group, cols=['Merkmal', 'Auspraegung_Code'], col_c
     """
 
     return group.groupby(cols)[col_count].sum().reset_index()
-
-
-def normalize_column(series: pd.Series, new_max=1, new_min=0) -> pd.Series:
-    """
-    Casts series data points between 0-1 based on min and max values in series.
-
-    :param: date_to_norm: int or float value to normalize.
-    :param: abs_min: Min val. in scope.
-    :param: abs_max: Max val. in scope.
-    :return: Series with normalized values between 0-1.
-    """
-    abs_max = series.max()
-    abs_min = series.min()
-    return series.apply(lambda date: ((date - abs_min) / (abs_max - abs_min)) * (new_max - new_min) + new_min)
 
 
 def normalize_list(liste, new_max=1, new_min=0) -> list:
@@ -384,7 +368,7 @@ def calc_cars_in_interest_area(gemeinde_ladestationen_poly, index_df, interest_a
         gem_idx = gem['Gemeinde_Index'].iloc[0]
         gem_idx_dict.update({name: gem_idx})
 
-    # TODO: Write into function
+
     factor = 1.0 / sum(gem_idx_dict.values())
 
     for k in gem_idx_dict:
@@ -427,7 +411,6 @@ def calc_cars_in_interest_area(gemeinde_ladestationen_poly, index_df, interest_a
         aoi_group = interest_area_ladestationen_poly.groupby(by='NAME_Zula')
         aoi_ev_gem = {}
 
-        # TODO: Refactor
 
         for zula in aoi_group:
 
@@ -435,7 +418,6 @@ def calc_cars_in_interest_area(gemeinde_ladestationen_poly, index_df, interest_a
             zula_gemeinden = zula[1]['NAME_Gemeinde']
             zula_gem_idx_dict = {gem: gem_idx_dict.get(gem, None) for gem in zula_gemeinden}
 
-            # TODO: Normalization in zula_gem_idx_dict
             factor = 1.0 / sum(filter(None, zula_gem_idx_dict.values()))
 
             for gem in zula_gem_idx_dict:
