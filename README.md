@@ -25,7 +25,15 @@ SpotOn uses following data as specified in the IandO/config.json.
     - Bundesländer DE
 
 *As of version 0.1 SpotOn is tested to work with the data from following sources:*
-**insert file links**
+
+- KFZ Data: https://gdz.bkg.bund.de/index.php/default/open-data/kfz-kennzeichen-1-250-000-kfz250.html
+- Zensus Data: https://www.zensus2011.de/DE/Home/Aktuelles/DemografischeGrunddaten.html;jsessionid=0AB671F77E2D8760E5E3F6697ED156EC.live292?nn=559100
+- VG5000_GEM: https://gdz.bkg.bund.de/index.php/default/open-data/verwaltungsgebiete-1-5-000-000-stand-01-01-vg5000-01-01.html
+- VG2500_LAN:https://gdz.bkg.bund.de/index.php/default/open-data/verwaltungsgebiete-1-2-500-000-stand-31-12-vg2500-12-31.html
+- Ladesaeulenregister_CSV: https://www.bundesnetzagentur.de/DE/Fachthemen/ElektrizitaetundGas/E-Mobilitaet/Ladesaeulenkarte/start.html
+
+(Since the start of the project the bundesnetzagentur updated the Ladesaeulenregister_CSV file but in a different file format.
+Our function is only working for csv.)
 
 On a high level the algorithm for the calculation of the ev charging points can be described as follows:
 - demographic data is imported, disaggregated, and regrouped
