@@ -99,6 +99,7 @@ def calc_attr_max_ratios(df):
         :param df: Dataframe containing the attribute count and number of total observations.
         :return: Dataframe with ratio each attribute in each cell
         """
+    df.reset_index(drop=True, inplace=True)
     attr_max_cell = bed.calc_group_max(df)
     df = df.merge(attr_max_cell, on="Gitter_ID_100m", how='inner')
     return df[['Anzahl']].div(df['TotalObservations'], axis=0)
@@ -167,10 +168,10 @@ def disaggr_age_df(df, distro_val=[0.4, 0.6]):
         :return: Dataframe containing the disaggregated age groups. Existing alter_10_jg age groups are retained.
         """
     age_disaggr = bed.disaggregate_age_attr(df, dis_low=distro_val[0], dis_high=distro_val[1])
-    df.append(age_disaggr)
+    df = df.append(age_disaggr)
     age_mask = df.duplicated(subset=['Gitter_ID_100m', 'Merkmal', 'Auspraegung_Code'], keep='first')
     df = bed.rem_by_mask(df, age_mask)
-    return df.loc[aoi_df['Merkmal'] != 'ALTER_KURZ']
+    return df.loc[df['Merkmal'] != 'ALTER_KURZ']
 
 
 def merge_to_gdf(df, to_merge, on='Gitter_ID_100m',
@@ -272,7 +273,6 @@ if __name__ == "__main__":
 
         # multiply Attr_to_total with weight Mapping
         aoi_df = bed.mult_col_dict(aoi_df, weight_map, new_col='Attr Index', prdne='Attr_to_total',
-                                   prdtwo='Auspraegung_Code',
                                    cond='Merkmal')
         print(f'The weight of the attribute code has been calculated.')
 
@@ -320,21 +320,21 @@ if __name__ == "__main__":
         interest_area_ladestationen_poly = bed.calc_cars_in_interest_area(gemeinde_ladestationen_poly, index_df,
                                                                           interest_area, aoi_type, ars_dict)
 
-    print("The amount of EV for each Gemeinde in the interest area has been calculated.")
+        print("The amount of EV for each Gemeinde in the interest area has been calculated.")
 
-    parking_data = ju.read_json_elements(config_obj, 'parking_values', "filepath")
-    parking_areas_of_intr = mpa.parking_areas_in_interest_area(parking_data, interest_area_ladestationen_poly)
+        parking_data = ju.read_json_elements(config_obj, 'parking_values', "filepath")
+        parking_areas_of_intr = mpa.parking_areas_in_interest_area(parking_data, interest_area_ladestationen_poly)
 
-    if parking_areas_of_intr.empty:
-        print('In the area of interest the demand for charging station is covered.\n'
-              'Therefore no csv and no html file were calculated.\n'
-              'End of program.')
-    else:
-        parking_areas_of_intr = mpa.get_ladesaeulen_locations(parking_areas_of_intr)
-        parking_areas_of_intr_df = pd.DataFrame(parking_areas_of_intr)
-        parking_areas_of_intr_df.to_csv(gdf_csv + interest_area + "_" + aoi_type + ".csv")
-        pts(parking_areas_of_intr, aoi_polygon, interest_area, aoi_type)
-        print(".csv and .html plot for amount of parking areas with chargings stations\n"
-              "for each Gemeinde in the interest area has been created.\n"
-              "You will find them at /data/results/gdf and /data/results/html.\n"
-              "End of program.")
+        if parking_areas_of_intr.empty:
+            print('In the area of interest the demand for charging station is covered.\n'
+                  'Therefore no csv and no html file were calculated.\n'
+                  'End of program.')
+        else:
+            parking_areas_of_intr = mpa.get_ladesaeulen_locations(parking_areas_of_intr)
+            parking_areas_of_intr_df = pd.DataFrame(parking_areas_of_intr)
+            parking_areas_of_intr_df.to_csv(gdf_csv + interest_area + "_" + aoi_type + ".csv")
+            pts(parking_areas_of_intr, aoi_polygon, interest_area, aoi_type)
+            print(".csv and .html plot for amount of parking areas with chargings stations\n"
+                  "for each Gemeinde in the interest area have been created.\n"
+                  "You will find them at /data/results/gdf and /data/results/html.\n"
+                  "End of program.")

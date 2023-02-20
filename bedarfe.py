@@ -5,6 +5,7 @@ import pandas as pd
 from pandas import DataFrame
 import random as rnd
 import geopandas as gpd
+import math
 
 
 
@@ -137,7 +138,7 @@ def calc_group_max(df: pd.DataFrame, col_to_group='Gitter_ID_100m', col_to_max='
     return pd.DataFrame(cell_max, columns=cols)
 
 
-def mult_col_dict(df: pd.DataFrame, mapping: dict, new_col: str, prdne, prdtwo, cond):
+def mult_col_dict(df: pd.DataFrame, mapping: dict, new_col: str, prdne, cond):
     """
     If condition in specified row[col] is met calcs the product of a cell value and a corresponding entry in a dictionary.
 
@@ -145,14 +146,11 @@ def mult_col_dict(df: pd.DataFrame, mapping: dict, new_col: str, prdne, prdtwo, 
     :param mapping: Dictionary providing the second operand for multiplication.
     :param new_col: Result column to attach to the dataframe.
     :param prdne: First operand of multiplication.
-    :param prdtwo: Second operand of multiplication.
     :param cond: Condition on which to trigger multiplication.
     :return: Df with result of multiplication between row member and passed dict.
     """
 
-    for key in mapping:
-        weights = mapping.get(key)
-        df[new_col] = df.apply(lambda x: (x[prdne] * weights[x[prdtwo]]) if x[cond] == key else 0, axis=1)
+    df[new_col] = df.apply(lambda x: (x[prdne] * mapping[x[cond]][x['Auspraegung_Code']]) if x[cond] in mapping else 0, axis=1)
     return df
 
 
@@ -267,7 +265,7 @@ def infer_gem_vals(df_one: pd.DataFrame, df_two: pd.DataFrame, weight_map: dict)
     gem_vals = df_one.merge(df_two, on='Merkmal', how='inner').rename({0: 'Ratio'}, axis=1)
     gem_vals['Gemeinde Fill Values'] = gem_vals['Calc Distro Attr/Cell'] * gem_vals['Ratio']
     gem_vals = mult_col_dict(gem_vals, weight_map, new_col='Attr Index', prdne='Gemeinde Fill Values',
-                             prdtwo='Auspraegung_Code', cond='Merkmal')
+                             cond='Merkmal')
     gem_vals.insert(8, "geometry", np.nan, True)
     return gpd.GeoDataFrame(gem_vals, geometry='geometry', crs='EPSG:3035')
 
