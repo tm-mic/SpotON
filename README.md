@@ -64,3 +64,8 @@ The project is not open for contribution.
 
 ## Project status
 Smaller issues arrised during development process. Especially runtime issues for large aois persist in this version. Abstraction for other data files (such as Zensus 2023) is not implemented.
+In the late stages of the project we realised that our import function for the Ladesaeulenregister_CSV ist not working for Mac Users.
+Sadly we had not enough time to fix this problem. Furthermore, Gemeinden is still listed as possible input at beginning of the program, 
+but the selection of a Gemeinde will throw an error. This is due to the fact that the Gemeinde shapefile is necessary reference for the index.    
+Lastly UserWarnings and FutureWarnings are supressed, but this does not affect the functionality of the program.
+ 
