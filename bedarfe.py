@@ -8,7 +8,6 @@ import geopandas as gpd
 import math
 
 
-
 def split_val_by_share(val_in: int, share: float) -> tuple:
     """
     Calcs two values from one with val1 + val2 = 1, if given share value rangeing from 0-1.
@@ -150,7 +149,8 @@ def mult_col_dict(df: pd.DataFrame, mapping: dict, new_col: str, prdne, cond):
     :return: Df with result of multiplication between row member and passed dict.
     """
 
-    df[new_col] = df.apply(lambda x: (x[prdne] * mapping[x[cond]][x['Auspraegung_Code']]) if x[cond] in mapping else 0, axis=1)
+    df[new_col] = df.apply(lambda x: (x[prdne] * mapping[x[cond]][x['Auspraegung_Code']]) if x[cond] in mapping else 0,
+                           axis=1)
     return df
 
 
@@ -359,13 +359,21 @@ def calc_num_ev_gem(ratios: dict, anzahl_evs_zb: int) -> dict:
 
 def calc_cars_in_interest_area(gemeinde_ladestationen_poly, index_df, interest_area: str, aoi_type: str,
                                ars_dict: dict):
+    """
+    :param gemeinde_ladestationen_poly: GeoDataframe containing all three levels of aoi (Gemeinden, Zulassungsbezirk, Bundesland),
+    charging poles and electric vehicles per Zulassungsbezirk and geometries of corresponding 100m grids
+    :param index_df: Dataframe containing cell indices for 100m grids present in aoi
+    :param interest_area: Name of Bundesland, Zulassungsbezirk or Gemeinde, defined in ui
+    :param aoi_type: Bundesland, Zulassungsbezirk or Gemeinde, defined in ui
+    :param ars_dict: Dict containing all Bundeslaender with respective ARS key for ui selection
+    :return: Dataframe containing electric vehicles and need for charging poles assigned to each gemeinde through gemeinde index
+    """
     gem_idx_dict = {}
     gem_groups = index_df.groupby(by='Gemeinde')
 
     for name, gem in gem_groups:
         gem_idx = gem['Gemeinde_Index'].iloc[0]
         gem_idx_dict.update({name: gem_idx})
-
 
     factor = 1.0 / sum(gem_idx_dict.values())
 
@@ -408,7 +416,6 @@ def calc_cars_in_interest_area(gemeinde_ladestationen_poly, index_df, interest_a
 
         aoi_group = interest_area_ladestationen_poly.groupby(by='NAME_Zula')
         aoi_ev_gem = {}
-
 
         for zula in aoi_group:
 

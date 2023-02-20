@@ -16,6 +16,7 @@ from geometry_operations import map_parking_areas as mpa
 from geometry_operations.plot_the_spot import plot_folium_map_from_GeoDataFrames as pts
 
 warnings.simplefilter(action='ignore', category=FutureWarning)
+warnings.simplefilter(action='ignore', category=UserWarning)
 
 config_obj = ju.read_json("IandO/config.json")
 shp_config = config_obj.get('shapefile')
